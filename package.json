@@ -1,0 +1,14 @@
+{
+  "name": "booktalk-frontend",
+  "private": true,
+  "scripts": {
+    "dev:web": "turbo run dev --filter=web",
+    "build:web": "turbo run build --filter=web",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

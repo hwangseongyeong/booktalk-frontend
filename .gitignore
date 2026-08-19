@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# Expo
+.expo/
+dist/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Turbo
+.turbo/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
