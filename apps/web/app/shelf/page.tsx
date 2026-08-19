@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookShelf } from "@booktalk/ui";
 import { apiClient, type MonthlyShelf } from "@booktalk/api-client";
+import { useRequireAuth } from "../../lib/useRequireAuth";
 
 function currentYearMonth() {
   const now = new Date();
@@ -22,12 +23,15 @@ function formatLabel(yearMonth: string) {
 }
 
 export default function ShelfPage() {
+  const ready = useRequireAuth();
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
   const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!ready) return;
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -47,7 +51,7 @@ export default function ShelfPage() {
     return () => {
       cancelled = true;
     };
-  }, [yearMonth]);
+  }, [ready, yearMonth]);
 
   const shelfBooks =
     shelf?.books.map((item) => ({
@@ -56,6 +60,8 @@ export default function ShelfPage() {
       spineImageUrl: item.spineImageUrl,
       primaryColor: item.primaryColor,
     })) ?? [];
+
+  if (!ready) return null;
 
   return (
     <main className="mx-auto max-w-md p-6">

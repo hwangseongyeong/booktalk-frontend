@@ -1,6 +1,7 @@
+// TODO: 백엔드 Swagger 스펙이 안정화되면 openapi-typescript로 자동 생성된 타입으로 교체
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
-// TODO: 백엔드 Swagger 스펙이 안정화되면 openapi-typescript로 자동 생성된 타입으로 교체
+// ---------- 도메인 타입 ----------
 export type Book = {
   id: number;
   isbn: string | null;
@@ -44,6 +45,48 @@ export type MonthlyShelf = {
   books: ShelfBookItem[];
 };
 
+// ---------- 인증 타입 ----------
+export type OAuthProviderKey = "kakao" | "naver" | "google" | "facebook";
+
+export type AuthUser = {
+  id: number;
+  email: string | null;
+  nickname: string;
+  profileImageUrl: string | null;
+  oauthProvider: string;
+};
+
+export type TokenPair = {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+};
+
+// ---------- 토큰 저장(localStorage) ----------
+const ACCESS_TOKEN_KEY = "booktalk_access_token";
+const REFRESH_TOKEN_KEY = "booktalk_refresh_token";
+
+export const authStorage = {
+  getAccessToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  },
+  getRefreshToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  },
+  setTokens(accessToken: string, refreshToken: string) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  },
+  clearTokens() {
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  },
+};
+
 // 백엔드 global.common.ApiResponse<T> 래핑 포맷
 type ApiEnvelope<T> = {
   success: boolean;
@@ -51,25 +94,97 @@ type ApiEnvelope<T> = {
   message: string | null;
 };
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+let refreshingPromise: Promise<void> | null = null;
+
+async function refreshAccessToken(): Promise<void> {
+  const refreshToken = authStorage.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) {
+    authStorage.clearTokens();
+    throw new Error("세션이 만료되었습니다. 다시 로그인해주세요.");
+  }
+
+  const body = (await res.json()) as ApiEnvelope<TokenPair>;
+  if (!body.success) {
+    authStorage.clearTokens();
+    throw new Error(body.message ?? "세션이 만료되었습니다. 다시 로그인해주세요.");
+  }
+
+  authStorage.setTokens(body.data.accessToken, body.data.refreshToken);
+}
+
+async function request<T>(path: string, options?: RequestInit, retry = true): Promise<T> {
+  const accessToken = authStorage.getAccessToken();
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options?.headers,
     },
   });
 
-  const body = (await res.json()) as ApiEnvelope<T>;
+  // access token 만료(401) 시 refresh token으로 1회 재시도
+  if ((res.status === 401 || res.status === 403) && retry && authStorage.getRefreshToken()) {
+    if (!refreshingPromise) {
+      refreshingPromise = refreshAccessToken().finally(() => {
+        refreshingPromise = null;
+      });
+    }
+    try {
+      await refreshingPromise;
+      return request<T>(path, options, false);
+    } catch {
+      throw new Error("로그인이 필요합니다.");
+    }
+  }
 
-  if (!res.ok || !body.success) {
-    throw new Error(body.message ?? `API 요청 실패: ${res.status} ${path}`);
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  let body: ApiEnvelope<T> | null = null;
+  try {
+    body = (await res.json()) as ApiEnvelope<T>;
+  } catch {
+    // 바디가 없는 응답(빈 401 등) 방어
+  }
+
+  if (!res.ok || !body || !body.success) {
+    throw new Error(body?.message ?? `API 요청 실패: ${res.status} ${path}`);
   }
 
   return body.data;
 }
 
 export const apiClient = {
+  // ---------- 인증 ----------
+  loginWithOAuth: (
+    provider: OAuthProviderKey,
+    payload: { code: string; redirectUri?: string; state?: string }
+  ) =>
+    request<TokenPair>(`/auth/${provider}/login`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getMe: () => request<AuthUser>("/auth/me"),
+
+  logout: () => {
+    authStorage.clearTokens();
+  },
+
+  // ---------- 책 ----------
   searchBooks: (query?: string) =>
     request<Book[]>(`/books${query ? `?query=${encodeURIComponent(query)}` : ""}`),
 
@@ -86,6 +201,7 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
+  // ---------- 독서 기록 ----------
   getMyReadingRecords: (status?: ReadingStatus) =>
     request<ReadingRecord[]>(`/reading-records${status ? `?status=${status}` : ""}`),
 
@@ -104,6 +220,7 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
+  // ---------- 서재 ----------
   getMonthlyShelf: (yearMonth?: string) =>
     request<MonthlyShelf>(`/shelves/monthly${yearMonth ? `?yearMonth=${yearMonth}` : ""}`),
 };

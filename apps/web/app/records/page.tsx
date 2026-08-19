@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type ReadingRecord } from "@booktalk/api-client";
+import { useRequireAuth } from "../../lib/useRequireAuth";
 
 export default function RecordsPage() {
+  const ready = useRequireAuth();
   const [records, setRecords] = useState<ReadingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +34,9 @@ export default function RecordsPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (ready) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   async function handleComplete(id: number) {
     setSubmitting(true);
@@ -56,6 +59,8 @@ export default function RecordsPage() {
 
   const readingRecords = records.filter((r) => r.status === "READING");
   const completedRecords = records.filter((r) => r.status === "COMPLETED");
+
+  if (!ready) return null;
 
   return (
     <main className="mx-auto max-w-md p-6">

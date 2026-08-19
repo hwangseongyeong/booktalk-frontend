@@ -95,7 +95,19 @@ export default function BooksPage() {
       </form>
 
       {message && <p className="mt-3 text-sm text-green-600">{message}</p>}
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="mt-3 text-sm text-red-600">
+          {error}
+          {error.includes("로그인이 필요합니다") && (
+            <>
+              {" "}
+              <Link href="/login" className="underline">
+                로그인하러 가기
+              </Link>
+            </>
+          )}
+        </p>
+      )}
 
       <button
         onClick={() => setShowForm((v) => !v)}
