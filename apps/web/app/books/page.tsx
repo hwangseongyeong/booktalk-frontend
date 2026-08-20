@@ -4,6 +4,42 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 
+// 검색 결과용 작은 표지 썸네일. 표지 URL이 없거나 로드에 실패하면 제목 기반 색상 블록으로 대체한다.
+const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
+
+function fallbackColor(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
+}
+
+function BookCoverThumbnail({ title, coverImageUrl }: { title: string; coverImageUrl: string | null }) {
+  const [failed, setFailed] = useState(false);
+
+  if (coverImageUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={coverImageUrl}
+        alt={title}
+        onError={() => setFailed(true)}
+        className="h-16 w-11 shrink-0 rounded-sm object-cover shadow-sm"
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{ backgroundColor: fallbackColor(title) }}
+      className="flex h-16 w-11 shrink-0 items-center justify-center rounded-sm shadow-sm"
+    >
+      <span className="px-0.5 text-center text-[9px] leading-tight text-white/85">{title.slice(0, 8)}</span>
+    </div>
+  );
+}
+
 export default function BooksPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BookSearchResult[]>([]);
@@ -188,19 +224,22 @@ export default function BooksPage() {
         {results.map((item) => (
           <li
             key={`${item.source}-${item.id ?? item.isbn ?? item.title}`}
-            className="flex items-center justify-between rounded-md border border-gray-200 p-3"
+            className="flex items-center gap-3 rounded-md border border-gray-200 p-3"
           >
-            <div>
-              <p className="text-sm font-medium">{item.title}</p>
+            <BookCoverThumbnail title={item.title} coverImageUrl={item.coverImageUrl} />
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{item.title}</p>
               <p className="text-xs text-gray-500">
                 {item.author ?? "저자 미상"}
                 {item.source === "ALADIN" && <span className="ml-2 text-gray-400">알라딘</span>}
               </p>
             </div>
+
             {item.id != null ? (
               <button
                 onClick={() => handleStartReading(item.id!)}
-                className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+                className="shrink-0 rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
               >
                 읽기 시작
               </button>
@@ -208,7 +247,7 @@ export default function BooksPage() {
               <button
                 onClick={() => handleRegisterFromSearch(item)}
                 disabled={registeringIsbn === item.isbn}
-                className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50"
+                className="shrink-0 rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50"
               >
                 {registeringIsbn === item.isbn ? "등록 중..." : "등록"}
               </button>
