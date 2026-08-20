@@ -16,10 +16,10 @@ export type Book = {
 };
 
 // 도서 검색 결과 한 건. id가 있으면 이미 로컬에 등록된 책(바로 읽기 시작 가능),
-// null이면 알라딘에서만 찾은 책(등록부터 필요).
+// null이면 카카오 책 검색에서만 찾은 책(등록부터 필요).
 export type BookSearchResult = {
   id: number | null;
-  source: "LOCAL" | "ALADIN";
+  source: "LOCAL" | "KAKAO";
   isbn: string | null;
   title: string;
   author: string | null;

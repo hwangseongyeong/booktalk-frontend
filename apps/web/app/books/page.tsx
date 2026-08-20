@@ -102,7 +102,7 @@ export default function BooksPage() {
     }
   }
 
-  // 알라딘 검색 결과(id 없음)를 우리 DB에 등록. 등록 후 목록을 새로고침하면 "읽기 시작" 버튼으로 바뀐다.
+  // 카카오 검색 결과(id 없음)를 우리 DB에 등록. 등록 후 목록을 새로고침하면 "읽기 시작" 버튼으로 바뀐다.
   async function handleRegisterFromSearch(item: BookSearchResult) {
     setError(null);
     setRegisteringIsbn(item.isbn);
@@ -144,7 +144,7 @@ export default function BooksPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="제목, 저자로 검색 (알라딘 통합 검색)"
+          placeholder="제목, 저자로 검색 (카카오 통합 검색)"
           className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
         <button type="submit" className="rounded-md bg-gray-900 px-4 py-2 text-sm text-white">
@@ -232,7 +232,7 @@ export default function BooksPage() {
               <p className="truncate text-sm font-medium">{item.title}</p>
               <p className="text-xs text-gray-500">
                 {item.author ?? "저자 미상"}
-                {item.source === "ALADIN" && <span className="ml-2 text-gray-400">알라딘</span>}
+                {item.source === "KAKAO" && <span className="ml-2 text-gray-400">카카오</span>}
               </p>
             </div>
 
