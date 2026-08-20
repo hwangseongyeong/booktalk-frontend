@@ -15,6 +15,18 @@ export type Book = {
   accentColor: string | null;
 };
 
+// 도서 검색 결과 한 건. id가 있으면 이미 로컬에 등록된 책(바로 읽기 시작 가능),
+// null이면 알라딘에서만 찾은 책(등록부터 필요).
+export type BookSearchResult = {
+  id: number | null;
+  source: "LOCAL" | "ALADIN";
+  isbn: string | null;
+  title: string;
+  author: string | null;
+  publisher: string | null;
+  coverImageUrl: string | null;
+};
+
 export type ReadingStatus = "READING" | "COMPLETED";
 
 export type ReadingRecord = {
@@ -186,7 +198,7 @@ export const apiClient = {
 
   // ---------- 책 ----------
   searchBooks: (query?: string) =>
-    request<Book[]>(`/books${query ? `?query=${encodeURIComponent(query)}` : ""}`),
+    request<BookSearchResult[]>(`/books${query ? `?query=${encodeURIComponent(query)}` : ""}`),
 
   registerBook: (payload: {
     isbn?: string;

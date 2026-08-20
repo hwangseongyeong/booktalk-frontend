@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, type Book } from "@booktalk/api-client";
+import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 
 export default function BooksPage() {
   const [query, setQuery] = useState("");
-  const [books, setBooks] = useState<Book[]>([]);
+  const [results, setResults] = useState<BookSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [registeringIsbn, setRegisteringIsbn] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", author: "", publisher: "", isbn: "", coverImageUrl: "" });
@@ -20,7 +21,7 @@ export default function BooksPage() {
     setError(null);
     try {
       const result = await apiClient.searchBooks(searchQuery);
-      setBooks(result);
+      setResults(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "책 목록을 불러오지 못했습니다.");
     } finally {
@@ -65,6 +66,27 @@ export default function BooksPage() {
     }
   }
 
+  // 알라딘 검색 결과(id 없음)를 우리 DB에 등록. 등록 후 목록을 새로고침하면 "읽기 시작" 버튼으로 바뀐다.
+  async function handleRegisterFromSearch(item: BookSearchResult) {
+    setError(null);
+    setRegisteringIsbn(item.isbn);
+    try {
+      await apiClient.registerBook({
+        title: item.title,
+        author: item.author ?? undefined,
+        publisher: item.publisher ?? undefined,
+        isbn: item.isbn ?? undefined,
+        coverImageUrl: item.coverImageUrl ?? undefined,
+      });
+      setMessage("책이 등록되었어요. 이제 '읽기 시작'을 눌러보세요.");
+      await loadBooks(query);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "책 등록에 실패했습니다.");
+    } finally {
+      setRegisteringIsbn(null);
+    }
+  }
+
   async function handleStartReading(bookId: number) {
     setError(null);
     try {
@@ -86,7 +108,7 @@ export default function BooksPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="제목, 저자로 검색"
+          placeholder="제목, 저자로 검색 (알라딘 통합 검색)"
           className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
         />
         <button type="submit" className="rounded-md bg-gray-900 px-4 py-2 text-sm text-white">
@@ -160,21 +182,37 @@ export default function BooksPage() {
 
       <ul className="mt-6 flex flex-col gap-2">
         {loading && <p className="text-sm text-gray-400">불러오는 중...</p>}
-        {!loading && books.length === 0 && (
-          <p className="text-sm text-gray-400">등록된 책이 없습니다. 먼저 책을 등록해보세요.</p>
+        {!loading && results.length === 0 && (
+          <p className="text-sm text-gray-400">검색 결과가 없습니다. 다른 키워드로 검색하거나 직접 등록해보세요.</p>
         )}
-        {books.map((book) => (
-          <li key={book.id} className="flex items-center justify-between rounded-md border border-gray-200 p-3">
+        {results.map((item) => (
+          <li
+            key={`${item.source}-${item.id ?? item.isbn ?? item.title}`}
+            className="flex items-center justify-between rounded-md border border-gray-200 p-3"
+          >
             <div>
-              <p className="text-sm font-medium">{book.title}</p>
-              <p className="text-xs text-gray-500">{book.author ?? "저자 미상"}</p>
+              <p className="text-sm font-medium">{item.title}</p>
+              <p className="text-xs text-gray-500">
+                {item.author ?? "저자 미상"}
+                {item.source === "ALADIN" && <span className="ml-2 text-gray-400">알라딘</span>}
+              </p>
             </div>
-            <button
-              onClick={() => handleStartReading(book.id)}
-              className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
-            >
-              읽기 시작
-            </button>
+            {item.id != null ? (
+              <button
+                onClick={() => handleStartReading(item.id!)}
+                className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+              >
+                읽기 시작
+              </button>
+            ) : (
+              <button
+                onClick={() => handleRegisterFromSearch(item)}
+                disabled={registeringIsbn === item.isbn}
+                className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50"
+              >
+                {registeringIsbn === item.isbn ? "등록 중..." : "등록"}
+              </button>
+            )}
           </li>
         ))}
       </ul>
