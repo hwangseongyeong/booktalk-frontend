@@ -31,10 +31,8 @@ function hashSeed(seed: string) {
   return Math.abs(hash);
 }
 
-// 책마다 높이를 살짝 다르게 줘서 실제 책장처럼 보이게 한다
-function spineHeight(seed: string, min: number, max: number) {
-  return min + (hashSeed(seed) % (max - min));
-}
+const CURRENT_MONTH_SPINE_HEIGHT = 140;
+const PAST_MONTH_SPINE_HEIGHT = 90;
 
 function fallbackColor(seed: string) {
   return FALLBACK_COLORS[hashSeed(seed) % FALLBACK_COLORS.length];
@@ -47,17 +45,14 @@ function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number })
   return (
     <div
       title={book.title}
-      className="flex w-6 shrink-0 items-end justify-center overflow-hidden rounded-t-sm"
+      className="flex w-6 shrink-0 items-center justify-center overflow-hidden rounded-t-sm"
       style={{ height, backgroundColor: book.spineImageUrl ? undefined : color }}
     >
       {book.spineImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
       ) : (
-        <span
-          className="mb-2 whitespace-nowrap text-[10px] text-white/85"
-          style={{ writingMode: "vertical-rl" }}
-        >
+        <span className="whitespace-nowrap text-[10px] text-white/85" style={{ writingMode: "vertical-rl" }}>
           {shortTitle}
         </span>
       )}
@@ -156,7 +151,7 @@ export default function HomePage() {
           ) : currentShelf && currentShelf.books.length > 0 ? (
             <div className="flex items-end gap-2 overflow-x-auto pb-1">
               {currentShelf.books.map((book) => (
-                <BookSpineBar key={book.readingRecordId} book={book} height={spineHeight(book.title, 90, 160)} />
+                <BookSpineBar key={book.readingRecordId} book={book} height={CURRENT_MONTH_SPINE_HEIGHT} />
               ))}
             </div>
           ) : (
@@ -176,7 +171,7 @@ export default function HomePage() {
               <div key={shelf.yearMonth} className="flex flex-col">
                 <div className="flex min-h-[110px] items-end gap-1.5">
                   {shelf.books.map((book) => (
-                    <BookSpineBar key={book.readingRecordId} book={book} height={spineHeight(book.title, 60, 110)} />
+                    <BookSpineBar key={book.readingRecordId} book={book} height={PAST_MONTH_SPINE_HEIGHT} />
                   ))}
                 </div>
                 <div className="mt-2 h-[2px] w-full bg-gray-900" />
