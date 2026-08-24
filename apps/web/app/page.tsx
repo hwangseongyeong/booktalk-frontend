@@ -55,7 +55,7 @@ function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number })
         <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
       ) : (
         <span
-          className="whitespace-nowrap text-[10px] leading-none text-white/85"
+          className="whitespace-nowrap text-center text-[10px] leading-none text-white/85"
           style={{ writingMode: "vertical-rl" }}
         >
           {shortTitle}
