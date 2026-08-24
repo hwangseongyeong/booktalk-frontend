@@ -40,26 +40,28 @@ function fallbackColor(seed: string) {
 
 function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number }) {
   const color = book.primaryColor ?? fallbackColor(book.title);
-  // 세로 글자 한 자당 약 13px 필요. 박스 높이를 넘지 않는 선에서 최대 글자 수 계산.
-  const maxChars = Math.max(2, Math.floor((height - 16) / 13));
-  const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars)}…` : book.title;
+  // 한 글자당 약 14px(폰트 10px + 줄간격) 필요. 박스 높이(위아래 여백 제외)를 넘지 않는 선에서 최대 글자 수 계산.
+  const maxChars = Math.max(2, Math.floor((height - 16) / 14));
+  const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
+  // writing-mode: vertical-rl은 iOS Safari 등에서 flex 정렬이 깨지는 호환성 문제가 있어,
+  // 글자를 한 자씩 분리해 flex-col로 쌓는 방식으로 구현 (모든 브라우저에서 항상 정확히 중앙정렬됨).
+  const characters = Array.from(shortTitle);
 
   return (
     <div
       title={book.title}
-      className="flex w-6 shrink-0 items-center justify-center overflow-hidden rounded-t-sm"
+      className="flex w-6 shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-sm"
       style={{ height, backgroundColor: book.spineImageUrl ? undefined : color }}
     >
       {book.spineImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
       ) : (
-        <span
-          className="whitespace-nowrap text-center text-[10px] leading-none text-white/85"
-          style={{ writingMode: "vertical-rl" }}
-        >
-          {shortTitle}
-        </span>
+        characters.map((char, i) => (
+          <span key={i} className="text-[10px] leading-tight text-white/85">
+            {char}
+          </span>
+        ))
       )}
     </div>
   );
