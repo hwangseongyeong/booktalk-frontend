@@ -117,18 +117,8 @@ export default function HomePage() {
         </Link>
       </header>
 
-      {/* 검색바 (누르면 검색 화면으로 이동) */}
-      <div className="mt-5 px-6">
-        <Link
-          href="/books"
-          className="flex items-center rounded-full bg-gray-900 px-4 py-2.5 text-sm text-gray-300"
-        >
-          책 제목이나 저자를 검색해보세요
-        </Link>
-      </div>
-
       {/* 탭: 기록(구현됨) / 소통·공유(준비 중) */}
-      <nav className="mt-6 grid grid-cols-3 border-b border-gray-100 px-6">
+      <nav className="mt-8 grid grid-cols-3 border-b border-gray-100 px-6">
         <div className="flex flex-col items-center gap-1 border-b-2 border-gray-900 pb-3">
           <span className="text-xs text-gray-400">기록</span>
           <span className="text-sm font-medium text-gray-900">Book Box</span>
