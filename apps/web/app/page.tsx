@@ -32,7 +32,7 @@ function hashSeed(seed: string) {
 }
 
 const CURRENT_MONTH_SPINE_HEIGHT = 140;
-const PAST_MONTH_SPINE_HEIGHT = 90;
+const PAST_MONTH_SPINE_HEIGHT = 120;
 
 function fallbackColor(seed: string) {
   return FALLBACK_COLORS[hashSeed(seed) % FALLBACK_COLORS.length];
@@ -171,7 +171,7 @@ export default function HomePage() {
           <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-8">
             {pastShelves.map((shelf) => (
               <div key={shelf.yearMonth} className="flex flex-col">
-                <div className="flex min-h-[110px] items-end gap-1.5">
+                <div className="flex min-h-[130px] items-end gap-1.5">
                   {shelf.books.map((book) => (
                     <BookSpineBar key={book.readingRecordId} book={book} height={PAST_MONTH_SPINE_HEIGHT} />
                   ))}
