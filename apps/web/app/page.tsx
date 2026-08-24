@@ -40,7 +40,9 @@ function fallbackColor(seed: string) {
 
 function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number }) {
   const color = book.primaryColor ?? fallbackColor(book.title);
-  const shortTitle = book.title.length > 10 ? `${book.title.slice(0, 10)}…` : book.title;
+  // 세로 글자 한 자당 약 13px 필요. 박스 높이를 넘지 않는 선에서 최대 글자 수 계산.
+  const maxChars = Math.max(2, Math.floor((height - 16) / 13));
+  const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars)}…` : book.title;
 
   return (
     <div
