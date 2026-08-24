@@ -54,7 +54,10 @@ function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number })
         // eslint-disable-next-line @next/next/no-img-element
         <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
       ) : (
-        <span className="whitespace-nowrap text-[10px] text-white/85" style={{ writingMode: "vertical-rl" }}>
+        <span
+          className="whitespace-nowrap text-[10px] leading-none text-white/85"
+          style={{ writingMode: "vertical-rl" }}
+        >
           {shortTitle}
         </span>
       )}
