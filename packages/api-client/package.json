@@ -5,6 +5,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "devDependencies": {
+    "@booktalk/config": "workspace:*",
+    "@types/node": "^20.14.0",
     "typescript": "^5.5.0"
   }
 }

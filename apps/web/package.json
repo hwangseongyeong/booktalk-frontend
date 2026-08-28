@@ -16,6 +16,7 @@
     "@booktalk/api-client": "workspace:*"
   },
   "devDependencies": {
+    "@booktalk/config": "workspace:*",
     "typescript": "^5.5.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
