@@ -151,17 +151,6 @@ function BookshelfFrame({ books, user }: { books: ShelfBookItem[]; user: AuthUse
               <p className="text-xs text-gray-300">이달의 첫 번째 책을 추가해보세요</p>
             </div>
           )}
-          {/* 아바타 */}
-          {i === 1 && user && (
-            <div className="absolute bottom-3 right-10">
-              <UserAvatar nickname={user.nickname} size={38} />
-            </div>
-          )}
-          {i === 2 && user && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-              <UserAvatar nickname={user.nickname} size={38} />
-            </div>
-          )}
         </div>
       ))}
 
@@ -209,6 +198,7 @@ export default function HomePage() {
   const ready = useRequireAuth();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
+  const [totalBooks, setTotalBooks] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<ShelfTab>("읽은 책");
   const [viewMode, setViewMode] = useState<ViewMode>("가로");
@@ -219,13 +209,15 @@ export default function HomePage() {
 
     async function load() {
       try {
-        const [me, currentShelf] = await Promise.all([
+        const [me, currentShelf, completed] = await Promise.all([
           apiClient.getMe(),
           apiClient.getMonthlyShelf(),
+          apiClient.getMyReadingRecords("COMPLETED"),
         ]);
         if (!cancelled) {
           setUser(me);
           setShelf(currentShelf);
+          setTotalBooks(completed.length);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -293,7 +285,13 @@ export default function HomePage() {
 
       {/* 통계 */}
       <div className="mt-6 px-5">
-        <p className="text-center text-base font-semibold text-gray-800">통계 넣기</p>
+        {totalBooks !== null ? (
+          <p className="text-center text-base font-semibold text-gray-800">
+            총 <span className="text-2xl font-bold">{totalBooks}</span>권의 책을 읽었어요
+          </p>
+        ) : (
+          <p className="text-center text-base font-semibold text-gray-300">불러오는 중...</p>
+        )}
       </div>
 
       {/* 책장 */}
