@@ -2,28 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, type MonthlyShelf, type ShelfBookItem } from "@booktalk/api-client";
+import { apiClient, type AuthUser, type MonthlyShelf, type ShelfBookItem } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 
-const LOOKBACK_MONTHS = 5; // 이번 달 제외하고 몇 달치까지 "지난 기록"으로 조회할지
-
+// ---------- 색상 폴백 ----------
 const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
-
-function currentYearMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function shiftYearMonth(yearMonth: string, delta: number) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function formatLabel(yearMonth: string) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  return `${y}년 ${m}월`;
-}
 
 function hashSeed(seed: string) {
   let hash = 0;
@@ -31,186 +14,305 @@ function hashSeed(seed: string) {
   return Math.abs(hash);
 }
 
-const CURRENT_MONTH_SPINE_HEIGHT = 140;
-const PAST_MONTH_SPINE_HEIGHT = 120;
-
 function fallbackColor(seed: string) {
   return FALLBACK_COLORS[hashSeed(seed) % FALLBACK_COLORS.length];
 }
 
-function BookSpineBar({ book, height }: { book: ShelfBookItem; height: number }) {
+// ---------- 타입 ----------
+type ViewMode = "세로" | "가로" | "펼치기";
+type ShelfTab = "읽은 책" | "읽는 중" | "읽고 싶은책";
+
+// ---------- 아이콘 ----------
+function BellIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <path d="M13 4 C9.1 4 6 7.1 6 11 L6 17 L4 19 L22 19 L20 17 L20 11 C20 7.1 16.9 4 13 4 Z"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.5 19 C10.5 20.4 11.6 21.5 13 21.5 C14.4 21.5 15.5 20.4 15.5 19"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="19" y1="5" x2="22" y2="3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="21" y1="8" x2="24" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M3 10 L12 3 L21 10 L21 21 L15 21 L15 15 L9 15 L9 21 L3 21 Z"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BookshelfNavIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="4" width="4" height="16" rx="1" stroke="currentColor" strokeWidth="2" />
+      <rect x="8" y="7" width="4" height="13" rx="1" stroke="currentColor" strokeWidth="2" />
+      <rect x="14" y="5" width="4" height="15" rx="1" stroke="currentColor" strokeWidth="2" />
+      <line x1="2" y1="21" x2="20" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PencilNavIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M17 3 L21 7 L8 20 L3 21 L4 16 Z"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChatNavIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15 C21 16.1 20.1 17 19 17 L7 17 L3 21 L3 5 C3 3.9 3.9 3 5 3 L19 3 C20.1 3 21 3.9 21 5 Z"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="12" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="16" cy="10" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PersonNavIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+      <path d="M4 21 C4 17.1 7.6 14 12 14 C16.4 14 20 17.1 20 21"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ---------- 유저 아바타 ----------
+function UserAvatar({ nickname, size = 36 }: { nickname: string; size?: number }) {
+  const initial = nickname ? nickname[0].toUpperCase() : "?";
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full bg-[#7C5CBF] font-bold text-white"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.44) }}
+    >
+      {initial}
+    </div>
+  );
+}
+
+// ---------- 책등 ----------
+function BookSpine({ book, height }: { book: ShelfBookItem; height: number }) {
   const color = book.primaryColor ?? fallbackColor(book.title);
-  // 한 글자당 약 14px(폰트 10px + 줄간격) 필요. 박스 높이(위아래 여백 제외)를 넘지 않는 선에서 최대 글자 수 계산.
   const maxChars = Math.max(2, Math.floor((height - 16) / 14));
   const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
-  // writing-mode: vertical-rl은 iOS Safari 등에서 flex 정렬이 깨지는 호환성 문제가 있어,
-  // 글자를 한 자씩 분리해 flex-col로 쌓는 방식으로 구현 (모든 브라우저에서 항상 정확히 중앙정렬됨).
-  const characters = Array.from(shortTitle);
 
   return (
     <div
       title={book.title}
-      className="flex w-6 shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-sm"
+      className="flex w-7 shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-sm"
       style={{ height, backgroundColor: book.spineImageUrl ? undefined : color }}
     >
       {book.spineImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
       ) : (
-        characters.map((char, i) => (
-          <span key={i} className="text-[10px] leading-tight text-white/85">
-            {char}
-          </span>
+        Array.from(shortTitle).map((char, i) => (
+          <span key={i} className="text-[10px] leading-tight text-white/85">{char}</span>
         ))
       )}
     </div>
   );
 }
 
+// ---------- 책장 프레임 ----------
+const SHELF_COUNT = 5;
+const SECTION_HEIGHT = 100;
+const BOOK_HEIGHT = 88;
+
+function BookshelfFrame({ books, user }: { books: ShelfBookItem[]; user: AuthUser | null }) {
+  return (
+    <div className="relative w-full border-2 border-gray-900">
+      {Array.from({ length: SHELF_COUNT }).map((_, i) => (
+        <div
+          key={i}
+          className="relative border-b-2 border-gray-900"
+          style={{ height: SECTION_HEIGHT }}
+        >
+          {/* 첫 번째 칸에만 책등 표시 */}
+          {i === 0 && books.length > 0 && (
+            <div className="absolute bottom-0 left-2 flex items-end gap-1 overflow-x-auto pr-2">
+              {books.map((book) => (
+                <BookSpine key={book.readingRecordId} book={book} height={BOOK_HEIGHT} />
+              ))}
+            </div>
+          )}
+          {i === 0 && books.length === 0 && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-xs text-gray-300">이달의 첫 번째 책을 추가해보세요</p>
+            </div>
+          )}
+          {/* 아바타 */}
+          {i === 1 && user && (
+            <div className="absolute bottom-3 right-10">
+              <UserAvatar nickname={user.nickname} size={38} />
+            </div>
+          )}
+          {i === 2 && user && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+              <UserAvatar nickname={user.nickname} size={38} />
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* + 책 등록 버튼 */}
+      <Link
+        href="/books"
+        className="absolute bottom-4 left-4 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
+      >
+        + 책 등록
+      </Link>
+    </div>
+  );
+}
+
+// ---------- 하단 내비게이션 ----------
+const NAV_ITEMS = [
+  { label: "홈", icon: <HomeIcon />, href: "/" },
+  { label: "책장", icon: <BookshelfNavIcon />, href: "/" },
+  { label: "기록", icon: <PencilNavIcon />, href: "/records" },
+  { label: "소통", icon: <ChatNavIcon />, href: "#" },
+  { label: "마이", icon: <PersonNavIcon />, href: "#" },
+] as const;
+
+function BottomNav({ active }: { active: string }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around bg-gray-900">
+      {NAV_ITEMS.map(({ label, icon, href }) => (
+        <Link
+          key={label}
+          href={href}
+          className={`flex flex-col items-center gap-0.5 transition-colors ${
+            label === active ? "text-white" : "text-gray-500"
+          }`}
+        >
+          {icon}
+          <span className="text-[10px]">{label}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+// ---------- 메인 페이지 ----------
 export default function HomePage() {
   const ready = useRequireAuth();
-  const [currentShelf, setCurrentShelf] = useState<MonthlyShelf | null>(null);
-  const [pastShelves, setPastShelves] = useState<MonthlyShelf[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<ShelfTab>("읽은 책");
+  const [viewMode, setViewMode] = useState<ViewMode>("가로");
 
   useEffect(() => {
     if (!ready) return;
-
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
-      const thisMonth = currentYearMonth();
-      const lookbackMonths = Array.from({ length: LOOKBACK_MONTHS }, (_, i) => shiftYearMonth(thisMonth, -(i + 1)));
-
       try {
-        const [current, ...past] = await Promise.all([
-          apiClient.getMonthlyShelf(thisMonth),
-          ...lookbackMonths.map((ym) => apiClient.getMonthlyShelf(ym)),
+        const [me, currentShelf] = await Promise.all([
+          apiClient.getMe(),
+          apiClient.getMonthlyShelf(),
         ]);
-
-        if (cancelled) return;
-        setCurrentShelf(current);
-        setPastShelves(past.filter((shelf) => shelf.bookCount > 0));
+        if (!cancelled) {
+          setUser(me);
+          setShelf(currentShelf);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
     load();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [ready]);
 
   if (!ready) return null;
 
+  const VIEW_LABELS: { key: ViewMode; label: string }[] = [
+    { key: "세로", label: "세로 쌓기" },
+    { key: "가로", label: "가로 쌓기" },
+    { key: "펼치기", label: "펼치기" },
+  ];
+
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white pb-16">
+    <div className="mx-auto min-h-screen max-w-md bg-white pb-20">
       {/* 헤더 */}
-      <header className="flex items-center justify-between px-6 pt-8">
-        <div>
-          <h1 className="font-serif text-2xl tracking-tight text-gray-900">BookTalk</h1>
-          <p className="mt-0.5 text-xs text-gray-400">읽은 책이 하나의 서재가 되다</p>
+      <header className="flex items-center justify-between px-5 pt-8">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">책장</h1>
+        <div className="flex items-center gap-3">
+          <button className="text-gray-800">
+            <BellIcon />
+          </button>
+          {user && <UserAvatar nickname={user.nickname} size={34} />}
         </div>
-        <Link href="/books" className="rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white">
-          + 등록
-        </Link>
       </header>
 
-      {/* 탭: 기록(구현됨) / 소통·공유(준비 중) */}
-      <nav className="mt-8 grid grid-cols-3 border-b border-gray-100 px-6">
-        <div className="flex flex-col items-center gap-1 border-b-2 border-gray-900 pb-3">
-          <span className="text-xs text-gray-400">기록</span>
-          <span className="text-sm font-medium text-gray-900">Book Box</span>
-        </div>
-        <div className="flex flex-col items-center gap-1 pb-3 text-gray-300">
-          <span className="text-xs">소통</span>
-          <span className="text-sm font-medium">Book Buddy</span>
-        </div>
-        <div className="flex flex-col items-center gap-1 pb-3 text-gray-300">
-          <span className="text-xs">공유</span>
-          <span className="text-sm font-medium">Book Share</span>
-        </div>
-      </nav>
-
-      {/* 이달의 북박스 */}
-      <section className="px-6 pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-900">이달의 북박스</p>
-            <p className="mt-0.5 text-xs text-gray-400">
-              {formatLabel(currentShelf?.yearMonth ?? currentYearMonth())} · {currentShelf?.bookCount ?? 0}권
-            </p>
-          </div>
-          <Link
-            href="/books"
-            className="rounded-full border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+      {/* 탭 */}
+      <div className="mt-5 flex gap-6 border-b border-gray-200 px-5">
+        {(["읽은 책", "읽는 중", "읽고 싶은책"] as ShelfTab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`pb-2.5 text-sm font-medium transition-colors ${
+              tab === t
+                ? "border-b-2 border-gray-900 text-gray-900"
+                : "text-gray-400"
+            }`}
           >
-            + 책 추가
-          </Link>
-        </div>
+            {t}
+          </button>
+        ))}
+      </div>
 
-        <div className="mt-8 flex min-h-[220px] flex-col justify-end">
-          {loading ? (
-            <p className="pb-10 text-center text-sm text-gray-300">불러오는 중...</p>
-          ) : currentShelf && currentShelf.books.length > 0 ? (
-            <div className="flex items-end gap-2 overflow-x-auto pb-1">
-              {currentShelf.books.map((book) => (
-                <BookSpineBar key={book.readingRecordId} book={book} height={CURRENT_MONTH_SPINE_HEIGHT} />
-              ))}
-            </div>
-          ) : (
-            <p className="pb-10 text-center text-sm text-gray-300">이달의 첫 번째 책을 추가해보세요</p>
-          )}
-          <div className="mt-3 h-[3px] w-full bg-gray-900" />
-        </div>
-      </section>
+      {/* 뷰 모드 토글 */}
+      <div className="mt-4 flex gap-2 px-5">
+        {VIEW_LABELS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setViewMode(key)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              viewMode === key
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {/* 지난 기록 */}
-      {pastShelves.length > 0 && (
-        <section className="mt-10 px-6">
-          <p className="text-sm font-medium text-gray-900">지난 기록</p>
+      {/* 통계 */}
+      <div className="mt-6 px-5">
+        <p className="text-center text-base font-semibold text-gray-800">통계 넣기</p>
+      </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-8">
-            {pastShelves.map((shelf) => (
-              <div key={shelf.yearMonth} className="flex flex-col">
-                <div className="flex min-h-[130px] items-end gap-1.5">
-                  {shelf.books.map((book) => (
-                    <BookSpineBar key={book.readingRecordId} book={book} height={PAST_MONTH_SPINE_HEIGHT} />
-                  ))}
-                </div>
-                <div className="mt-2 h-[2px] w-full bg-gray-900" />
-                <p className="mt-2 text-center text-xs text-gray-400">
-                  {formatLabel(shelf.yearMonth)} · {shelf.bookCount}권
-                </p>
-              </div>
-            ))}
+      {/* 책장 */}
+      <div className="mt-5 px-5">
+        {loading ? (
+          <p className="text-center text-sm text-gray-300">불러오는 중...</p>
+        ) : tab === "읽은 책" ? (
+          <BookshelfFrame books={shelf?.books ?? []} user={user} />
+        ) : (
+          <div
+            className="flex items-center justify-center border-2 border-dashed border-gray-200"
+            style={{ height: SECTION_HEIGHT * SHELF_COUNT }}
+          >
+            <p className="text-sm text-gray-400">준비 중</p>
           </div>
-        </section>
-      )}
+        )}
+      </div>
 
-      <footer className="mt-16 flex justify-center gap-4 px-6 text-xs text-gray-300">
-        <Link href="/records" className="hover:underline">
-          독서 기록 전체보기
-        </Link>
-        <span>·</span>
-        <LogoutLink />
-      </footer>
-    </main>
-  );
-}
-
-function LogoutLink() {
-  function handleLogout() {
-    apiClient.logout();
-    window.location.href = "/login";
-  }
-
-  return (
-    <button onClick={handleLogout} className="hover:underline">
-      로그아웃
-    </button>
+      <BottomNav active="책장" />
+    </div>
   );
 }
