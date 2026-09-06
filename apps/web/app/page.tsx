@@ -87,19 +87,6 @@ function PersonNavIcon() {
   );
 }
 
-// ---------- 유저 아바타 ----------
-function UserAvatar({ nickname, size = 36 }: { nickname: string; size?: number }) {
-  const initial = nickname ? nickname[0].toUpperCase() : "?";
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full bg-[#7C5CBF] font-bold text-white"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.44) }}
-    >
-      {initial}
-    </div>
-  );
-}
-
 // ---------- 책등 ----------
 function BookSpine({ book, height }: { book: ShelfBookItem; height: number }) {
   const color = book.primaryColor ?? fallbackColor(book.title);
@@ -241,12 +228,9 @@ export default function HomePage() {
       {/* 헤더 */}
       <header className="flex items-center justify-between px-5 pt-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">책장</h1>
-        <div className="flex items-center gap-3">
-          <button className="text-gray-800">
-            <BellIcon />
-          </button>
-          {user && <UserAvatar nickname={user.nickname} size={34} />}
-        </div>
+        <button className="text-gray-800">
+          <BellIcon />
+        </button>
       </header>
 
       {/* 탭 */}
