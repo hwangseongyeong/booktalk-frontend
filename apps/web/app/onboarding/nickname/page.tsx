@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@booktalk/api-client";
 import { OnboardingScaffold } from "../../../components/onboarding-scaffold";
 import { TextField } from "../../../components/ui";
-import { getProfile, setProfile } from "../../../lib/onboarding";
+import { getDraft, setDraft } from "../../../lib/onboarding";
 
+const MIN = 2;
 const MAX = 12;
 
 export default function NicknamePage() {
@@ -13,16 +15,25 @@ export default function NicknamePage() {
   const [nickname, setNickname] = useState("");
 
   useEffect(() => {
-    setNickname(getProfile().nickname);
+    const draft = getDraft().nickname;
+    if (draft) {
+      setNickname(draft);
+      return;
+    }
+    // draft가 없으면 소셜 제공자가 넣어준 기본 닉네임을 채워준다.
+    apiClient
+      .getMyProfile()
+      .then((me) => setNickname((cur) => cur || me.nickname))
+      .catch(() => {});
   }, []);
 
   const trimmed = nickname.trim();
   const tooLong = trimmed.length > MAX;
-  const valid = trimmed.length >= 2 && !tooLong;
+  const valid = trimmed.length >= MIN && !tooLong;
 
   function handleNext() {
     if (!valid) return;
-    setProfile({ nickname: trimmed });
+    setDraft({ nickname: trimmed });
     router.push("/onboarding/profile");
   }
 

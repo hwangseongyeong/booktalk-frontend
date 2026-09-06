@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * 로그인 후 온보딩(닉네임 → 프로필 → 친구 초대) 상태 관리.
+ * 로그인 후 온보딩(닉네임 → 프로필 → 친구 초대) 흐름의 임시 저장소.
  *
- * ⚠️ 임시 구현: 백엔드에 온보딩 API(PATCH /users/me 등)가 아직 없어 값을 localStorage에만 저장한다.
- * API가 생기면 setProfile을 서버 호출로 바꾸고, done 플래그는 서버의 유저 상태로 대체한다.
+ * 최종 저장은 백엔드(PATCH /users/me, POST /users/me/onboarding/complete)가 담당한다.
+ * 여기서는 여러 단계에 걸쳐 입력한 값을 잠깐 들고 있기 위한 draft만 sessionStorage에 둔다.
+ * 온보딩 완료 시 clearDraft()로 비운다.
  */
 
-const PROFILE_KEY = "booktalk_profile";
-const PROFILE_DONE_KEY = "booktalk_profile_done";
+const DRAFT_KEY = "booktalk_onboarding_draft";
 
-/** 아바타 배경으로 쓰는 프리셋 색 (피그마 무채색 톤 + 후보 액센트 1개) */
+/** 아바타 배경 프리셋 (피그마 무채색 톤 + 후보 액센트 1개). 모두 #RRGGBB. */
 export const AVATAR_COLORS = [
   "#111111",
   "#6B6B6B",
@@ -20,49 +20,33 @@ export const AVATAR_COLORS = [
   "#3700FF",
 ] as const;
 
-export type OnboardingProfile = {
+export type OnboardingDraft = {
   nickname: string;
   avatarColor: string;
-  /** 초대 화면에서 채운 슬롯 수 (프론트 임시값) */
-  invitedCount: number;
 };
 
-const EMPTY: OnboardingProfile = {
-  nickname: "",
-  avatarColor: AVATAR_COLORS[0],
-  invitedCount: 0,
-};
+const EMPTY: OnboardingDraft = { nickname: "", avatarColor: AVATAR_COLORS[0] };
 
-export function getProfile(): OnboardingProfile {
+export function getDraft(): OnboardingDraft {
   if (typeof window === "undefined") return { ...EMPTY };
   try {
-    const raw = window.localStorage.getItem(PROFILE_KEY);
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
     if (!raw) return { ...EMPTY };
-    return { ...EMPTY, ...(JSON.parse(raw) as Partial<OnboardingProfile>) };
+    return { ...EMPTY, ...(JSON.parse(raw) as Partial<OnboardingDraft>) };
   } catch {
     return { ...EMPTY };
   }
 }
 
-export function setProfile(patch: Partial<OnboardingProfile>): OnboardingProfile {
-  const next = { ...getProfile(), ...patch };
+export function setDraft(patch: Partial<OnboardingDraft>): OnboardingDraft {
+  const next = { ...getDraft(), ...patch };
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next));
   }
   return next;
 }
 
-export function isProfileOnboardingDone(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(PROFILE_DONE_KEY) === "1";
-}
-
-export function markProfileOnboardingDone() {
+export function clearDraft() {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(PROFILE_DONE_KEY, "1");
-}
-
-/** 로그인 직후 이동할 경로: 온보딩 미완료면 닉네임부터, 완료면 홈. */
-export function postLoginPath(): string {
-  return isProfileOnboardingDone() ? "/" : "/onboarding/nickname";
+  window.sessionStorage.removeItem(DRAFT_KEY);
 }

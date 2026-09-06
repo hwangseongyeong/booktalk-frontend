@@ -65,7 +65,11 @@ export type AuthUser = {
   email: string | null;
   nickname: string;
   profileImageUrl: string | null;
+  /** 온보딩에서 고른 프로필 색 (#RRGGBB). 미설정이면 null. */
+  profileColor: string | null;
   oauthProvider: string;
+  /** 로그인 후 온보딩(닉네임·프로필·친구초대) 완료 여부. false면 온보딩으로 보낸다. */
+  onboardingCompleted: boolean;
 };
 
 export type TokenPair = {
@@ -195,6 +199,23 @@ export const apiClient = {
   logout: () => {
     authStorage.clearTokens();
   },
+
+  // ---------- 사용자 / 온보딩 ----------
+  getMyProfile: () => request<AuthUser>("/users/me"),
+
+  /** 닉네임/프로필 수정. 온보딩 닉네임·프로필 단계에서도 이 API로 저장한다. */
+  updateMyProfile: (payload: {
+    nickname: string;
+    profileImageUrl?: string;
+    profileColor?: string;
+  }) =>
+    request<AuthUser>("/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
+  completeOnboarding: () =>
+    request<AuthUser>("/users/me/onboarding/complete", { method: "POST" }),
 
   // ---------- 책 ----------
   searchBooks: (query?: string) =>
