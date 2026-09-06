@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 import { PillButton, TextField } from "../../components/ui";
 import { PlusIcon } from "../../components/icons";
+import { BottomNav } from "../../components/bottom-nav";
 
 // 검색 결과용 표지 썸네일. 표지 URL이 없거나 로드에 실패하면 회색 블록으로 대체한다(피그마 톤).
 function BookCover({ title, coverImageUrl }: { title: string; coverImageUrl: string | null }) {
@@ -125,7 +126,7 @@ export default function BooksPage() {
   }
 
   return (
-    <main className="app-shell px-6 pb-16 pt-8">
+    <main className="app-shell px-6 pb-24 pt-8">
       <Link href="/" className="text-sm font-bold text-muted hover:text-ink">
         ← 홈
       </Link>
@@ -276,6 +277,8 @@ export default function BooksPage() {
           </div>
         ))}
       </div>
+
+      <BottomNav />
     </main>
   );
 }

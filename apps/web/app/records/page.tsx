@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
+import { BottomNav } from "../../components/bottom-nav";
 
 export default function RecordsPage() {
   const ready = useRequireAuth();
@@ -63,7 +64,7 @@ export default function RecordsPage() {
   if (!ready) return null;
 
   return (
-    <main className="mx-auto max-w-md p-6">
+    <main className="mx-auto max-w-md p-6 pb-24">
       <Link href="/" className="text-sm text-gray-400 hover:underline">
         ← 홈
       </Link>
@@ -151,6 +152,8 @@ export default function RecordsPage() {
           ))}
         </ul>
       </section>
+
+      <BottomNav />
     </main>
   );
 }

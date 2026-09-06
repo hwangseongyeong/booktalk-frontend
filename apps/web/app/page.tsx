@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type AuthUser, type MonthlyShelf, type ShelfBookItem } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
+import { BellIcon } from "../components/icons";
+import { BottomNav } from "../components/bottom-nav";
 
 // ---------- 색상 폴백 ----------
 const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
@@ -21,71 +23,6 @@ function fallbackColor(seed: string) {
 // ---------- 타입 ----------
 type ViewMode = "세로" | "가로" | "펼치기";
 type ShelfTab = "읽은 책" | "읽는 중" | "읽고 싶은책";
-
-// ---------- 아이콘 ----------
-function BellIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-      <path d="M13 4 C9.1 4 6 7.1 6 11 L6 17 L4 19 L22 19 L20 17 L20 11 C20 7.1 16.9 4 13 4 Z"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10.5 19 C10.5 20.4 11.6 21.5 13 21.5 C14.4 21.5 15.5 20.4 15.5 19"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <line x1="19" y1="5" x2="22" y2="3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="21" y1="8" x2="24" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function HomeIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M3 10 L12 3 L21 10 L21 21 L15 21 L15 15 L9 15 L9 21 L3 21 Z"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function BookshelfNavIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="4" width="4" height="16" rx="1" stroke="currentColor" strokeWidth="2" />
-      <rect x="8" y="7" width="4" height="13" rx="1" stroke="currentColor" strokeWidth="2" />
-      <rect x="14" y="5" width="4" height="15" rx="1" stroke="currentColor" strokeWidth="2" />
-      <line x1="2" y1="21" x2="20" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PencilNavIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M17 3 L21 7 L8 20 L3 21 L4 16 Z"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChatNavIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M21 15 C21 16.1 20.1 17 19 17 L7 17 L3 21 L3 5 C3 3.9 3.9 3 5 3 L19 3 C20.1 3 21 3.9 21 5 Z"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="8" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="12" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="16" cy="10" r="1.2" fill="currentColor" />
-    </svg>
-  );
-}
-
-function PersonNavIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-      <path d="M4 21 C4 17.1 7.6 14 12 14 C16.4 14 20 17.1 20 21"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 // ---------- 책등 ----------
 function BookSpine({ book, height }: { book: ShelfBookItem; height: number }) {
@@ -152,34 +89,6 @@ function BookshelfFrame({ books, user }: { books: ShelfBookItem[]; user: AuthUse
   );
 }
 
-// ---------- 하단 내비게이션 ----------
-const NAV_ITEMS = [
-  { label: "홈", icon: <HomeIcon />, href: "/" },
-  { label: "책장", icon: <BookshelfNavIcon />, href: "/" },
-  { label: "기록", icon: <PencilNavIcon />, href: "/records" },
-  { label: "소통", icon: <ChatNavIcon />, href: "#" },
-  { label: "마이", icon: <PersonNavIcon />, href: "#" },
-] as const;
-
-function BottomNav({ active }: { active: string }) {
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around bg-gray-900">
-      {NAV_ITEMS.map(({ label, icon, href }) => (
-        <Link
-          key={label}
-          href={href}
-          className={`flex flex-col items-center gap-0.5 transition-colors ${
-            label === active ? "text-white" : "text-gray-500"
-          }`}
-        >
-          {icon}
-          <span className="text-[10px]">{label}</span>
-        </Link>
-      ))}
-    </nav>
-  );
-}
-
 // ---------- 메인 페이지 ----------
 export default function HomePage() {
   const ready = useRequireAuth();
@@ -224,7 +133,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-white pb-20">
+    <div className="mx-auto min-h-screen max-w-md bg-white pb-24">
       {/* 헤더 */}
       <header className="flex items-center justify-between px-5 pt-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">책장</h1>
@@ -294,7 +203,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <BottomNav active="책장" />
+      <BottomNav />
     </div>
   );
 }

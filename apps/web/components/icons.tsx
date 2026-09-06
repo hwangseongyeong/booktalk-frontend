@@ -118,3 +118,65 @@ export function CheckIcon(props: IconProps) {
     </svg>
   );
 }
+
+/* ---------- 알림 ---------- */
+export function BellIcon({ size = 26, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden {...props}>
+      <path d="M13 4 C9.1 4 6 7.1 6 11 L6 17 L4 19 L22 19 L20 17 L20 11 C20 7.1 16.9 4 13 4 Z"
+        stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.5 19 C10.5 20.4 11.6 21.5 13 21.5 C14.4 21.5 15.5 20.4 15.5 19"
+        stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      <line x1="19" y1="5" x2="22" y2="3" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      <line x1="21" y1="8" x2="24" y2="7" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/* ---------- 하단 내비게이션 (홈·책장·기록·소통·마이) ---------- */
+export function NavHomeIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <path d="M3 10 L12 3 L21 10 L21 21 L15 21 L15 15 L9 15 L9 21 L3 21 Z" />
+    </svg>
+  );
+}
+
+export function NavShelfIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <rect x="2" y="4" width="4" height="16" rx="1" />
+      <rect x="8" y="7" width="4" height="13" rx="1" />
+      <rect x="14" y="5" width="4" height="15" rx="1" />
+      <line x1="2" y1="21" x2="20" y2="21" />
+    </svg>
+  );
+}
+
+export function NavRecordIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <path d="M17 3 L21 7 L8 20 L3 21 L4 16 Z" />
+    </svg>
+  );
+}
+
+export function NavChatIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <path d="M21 15 C21 16.1 20.1 17 19 17 L7 17 L3 21 L3 5 C3 3.9 3.9 3 5 3 L19 3 C20.1 3 21 3.9 21 5 Z" />
+      <circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="10" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="10" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function NavMyIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <circle cx="12" cy="7" r="4" />
+      <path d="M4 21 C4 17.1 7.6 14 12 14 C16.4 14 20 17.1 20 21" />
+    </svg>
+  );
+}
