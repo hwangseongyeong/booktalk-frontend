@@ -3,20 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
+import { PillButton, TextField } from "../../components/ui";
+import { PlusIcon } from "../../components/icons";
 
-// 검색 결과용 작은 표지 썸네일. 표지 URL이 없거나 로드에 실패하면 제목 기반 색상 블록으로 대체한다.
-const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
-
-function fallbackColor(seed: string) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
-}
-
-function BookCoverThumbnail({ title, coverImageUrl }: { title: string; coverImageUrl: string | null }) {
+// 검색 결과용 표지 썸네일. 표지 URL이 없거나 로드에 실패하면 회색 블록으로 대체한다(피그마 톤).
+function BookCover({ title, coverImageUrl }: { title: string; coverImageUrl: string | null }) {
   const [failed, setFailed] = useState(false);
+  const box = "h-[84px] w-16 shrink-0 overflow-hidden rounded-[6px] border-2 border-line bg-fill-strong";
 
   if (coverImageUrl && !failed) {
     return (
@@ -25,17 +18,15 @@ function BookCoverThumbnail({ title, coverImageUrl }: { title: string; coverImag
         src={coverImageUrl}
         alt={title}
         onError={() => setFailed(true)}
-        className="h-16 w-11 shrink-0 rounded-sm object-cover shadow-sm"
+        className={`${box} object-cover`}
       />
     );
   }
-
   return (
-    <div
-      style={{ backgroundColor: fallbackColor(title) }}
-      className="flex h-16 w-11 shrink-0 items-center justify-center rounded-sm shadow-sm"
-    >
-      <span className="px-0.5 text-center text-[9px] leading-tight text-white/85">{title.slice(0, 8)}</span>
+    <div className={`${box} flex items-center justify-center`}>
+      <span className="px-1 text-center text-[9px] font-bold leading-tight text-muted">
+        {title.slice(0, 10)}
+      </span>
     </div>
   );
 }
@@ -134,27 +125,94 @@ export default function BooksPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <Link href="/" className="text-sm text-gray-400 hover:underline">
+    <main className="app-shell px-6 pb-16 pt-8">
+      <Link href="/" className="text-sm font-bold text-muted hover:text-ink">
         ← 홈
       </Link>
-      <h1 className="mt-2 text-xl font-medium">책 등록/검색</h1>
 
-      <form onSubmit={handleSearch} className="mt-4 flex gap-2">
-        <input
+      <h1 className="mt-3 text-[28px] font-bold leading-tight tracking-tight text-ink">책 등록</h1>
+      <p className="mt-1 text-sm font-bold text-muted">읽은 책이 하나의 서재가 되다</p>
+
+      {/* 카카오 통합검색 */}
+      <form onSubmit={handleSearch} className="mt-6 flex items-start gap-2">
+        <TextField
+          label="검색어"
+          hideLabel
+          className="flex-1"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="제목, 저자로 검색 (카카오 통합 검색)"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+          placeholder="제목, 저자로 검색 (카카오 통합검색)"
         />
-        <button type="submit" className="rounded-md bg-gray-900 px-4 py-2 text-sm text-white">
+        <PillButton
+          type="submit"
+          fullWidth={false}
+          size="sm"
+          className="shrink-0 px-5 py-3.5 text-base"
+        >
           검색
-        </button>
+        </PillButton>
       </form>
 
-      {message && <p className="mt-3 text-sm text-green-600">{message}</p>}
+      {/* 직접 책 등록 */}
+      <button
+        type="button"
+        onClick={() => setShowForm((v) => !v)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-field border-2 border-dashed border-muted-light py-3 text-sm font-bold text-muted transition-colors hover:border-ink hover:text-ink"
+      >
+        {showForm ? (
+          "직접 등록 닫기"
+        ) : (
+          <>
+            <PlusIcon size={18} />
+            직접 책 등록
+          </>
+        )}
+      </button>
+
+      {showForm && (
+        <form
+          onSubmit={handleRegister}
+          className="mt-3 flex flex-col gap-3 rounded-card border-bold border-line bg-paper-pure p-5"
+        >
+          <TextField
+            label="책 제목"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="책 제목"
+          />
+          <TextField
+            label="저자"
+            value={form.author}
+            onChange={(e) => setForm({ ...form, author: e.target.value })}
+            placeholder="저자"
+          />
+          <TextField
+            label="출판사"
+            value={form.publisher}
+            onChange={(e) => setForm({ ...form, publisher: e.target.value })}
+            placeholder="출판사"
+          />
+          <TextField
+            label="ISBN (선택)"
+            value={form.isbn}
+            onChange={(e) => setForm({ ...form, isbn: e.target.value })}
+            placeholder="ISBN"
+          />
+          <TextField
+            label="표지 이미지 URL (선택)"
+            value={form.coverImageUrl}
+            onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
+            placeholder="https://"
+          />
+          <PillButton type="submit" disabled={submitting} className="mt-1">
+            {submitting ? "등록 중..." : "등록하기"}
+          </PillButton>
+        </form>
+      )}
+
+      {message && <p className="mt-4 text-sm font-bold text-green-600">{message}</p>}
       {error && (
-        <p className="mt-3 text-sm text-red-600">
+        <p className="mt-4 text-sm font-bold text-red-600">
           {error}
           {error.includes("로그인이 필요합니다") && (
             <>
@@ -167,94 +225,57 @@ export default function BooksPage() {
         </p>
       )}
 
-      <button
-        onClick={() => setShowForm((v) => !v)}
-        className="mt-4 w-full rounded-md border border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:border-gray-400"
-      >
-        {showForm ? "취소" : "+ 직접 입력해서 책 등록하기"}
-      </button>
-
-      {showForm && (
-        <form onSubmit={handleRegister} className="mt-3 flex flex-col gap-2 rounded-md border border-gray-200 p-4">
-          <input
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="책 제목 *"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <input
-            value={form.author}
-            onChange={(e) => setForm({ ...form, author: e.target.value })}
-            placeholder="저자"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <input
-            value={form.publisher}
-            onChange={(e) => setForm({ ...form, publisher: e.target.value })}
-            placeholder="출판사"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <input
-            value={form.isbn}
-            onChange={(e) => setForm({ ...form, isbn: e.target.value })}
-            placeholder="ISBN (선택)"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <input
-            value={form.coverImageUrl}
-            onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
-            placeholder="표지 이미지 URL (선택)"
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-1 rounded-md bg-gray-900 py-2 text-sm text-white disabled:opacity-50"
-          >
-            {submitting ? "등록 중..." : "등록"}
-          </button>
-        </form>
-      )}
-
-      <ul className="mt-6 flex flex-col gap-2">
-        {loading && <p className="text-sm text-gray-400">불러오는 중...</p>}
+      {/* 검색 결과 */}
+      <div className="mt-6 flex flex-col gap-3">
+        {loading && <p className="text-sm font-medium text-muted">불러오는 중...</p>}
         {!loading && results.length === 0 && (
-          <p className="text-sm text-gray-400">검색 결과가 없습니다. 다른 키워드로 검색하거나 직접 등록해보세요.</p>
+          <p className="text-sm font-medium text-muted">
+            검색 결과가 없어요. 다른 키워드로 검색하거나 직접 등록해보세요.
+          </p>
         )}
         {results.map((item) => (
-          <li
+          <div
             key={`${item.source}-${item.id ?? item.isbn ?? item.title}`}
-            className="flex items-center gap-3 rounded-md border border-gray-200 p-3"
+            className="flex items-center gap-3 rounded-card border-bold border-line bg-paper-pure p-3.5"
           >
-            <BookCoverThumbnail title={item.title} coverImageUrl={item.coverImageUrl} />
+            <BookCover title={item.title} coverImageUrl={item.coverImageUrl} />
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{item.title}</p>
-              <p className="text-xs text-gray-500">
-                {item.author ?? "저자 미상"}
-                {item.source === "KAKAO" && <span className="ml-2 text-gray-400">카카오</span>}
+              <p className="truncate font-bold text-ink">{item.title}</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-muted">
+                <span className="truncate">{item.author ?? "저자 미상"}</span>
+                {item.source === "KAKAO" && (
+                  <span className="shrink-0 rounded-full bg-fill px-1.5 py-0.5 text-[11px] font-bold text-muted">
+                    카카오
+                  </span>
+                )}
               </p>
             </div>
 
             {item.id != null ? (
-              <button
+              <PillButton
+                variant="outline"
+                size="sm"
+                fullWidth={false}
+                className="shrink-0"
                 onClick={() => handleStartReading(item.id!)}
-                className="shrink-0 rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
               >
                 읽기 시작
-              </button>
+              </PillButton>
             ) : (
-              <button
-                onClick={() => handleRegisterFromSearch(item)}
+              <PillButton
+                size="sm"
+                fullWidth={false}
+                className="shrink-0"
                 disabled={registeringIsbn === item.isbn}
-                className="shrink-0 rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50 disabled:opacity-50"
+                onClick={() => handleRegisterFromSearch(item)}
               >
-                {registeringIsbn === item.isbn ? "등록 중..." : "등록"}
-              </button>
+                {registeringIsbn === item.isbn ? "등록 중" : "등록"}
+              </PillButton>
             )}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </main>
   );
 }

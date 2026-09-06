@@ -33,9 +33,15 @@ export function ScreenShell({
 /*  PillButton — 알약 버튼 (버튼 / 링크 겸용)                            */
 /* ------------------------------------------------------------------ */
 type PillVariant = "primary" | "outline" | "ghost";
+type PillSize = "md" | "sm";
 
 const PILL_BASE =
-  "inline-flex w-full items-center justify-center rounded-full px-6 py-4 text-base font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none";
+  "inline-flex items-center justify-center rounded-full font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none";
+
+const PILL_SIZE: Record<PillSize, string> = {
+  md: "px-6 py-4 text-base",
+  sm: "px-4 py-2 text-sm",
+};
 
 const PILL_VARIANT: Record<PillVariant, string> = {
   primary: "bg-ink text-paper-pure hover:bg-ink-soft",
@@ -43,12 +49,19 @@ const PILL_VARIANT: Record<PillVariant, string> = {
   ghost: "text-ink hover:bg-fill",
 };
 
-export function pillClasses(variant: PillVariant = "primary", extra = "") {
-  return `${PILL_BASE} ${PILL_VARIANT[variant]} ${extra}`.trim();
+export function pillClasses(
+  variant: PillVariant = "primary",
+  { size = "md", fullWidth = true, extra = "" }: { size?: PillSize; fullWidth?: boolean; extra?: string } = {}
+) {
+  return [PILL_BASE, PILL_SIZE[size], fullWidth ? "w-full" : "", PILL_VARIANT[variant], extra]
+    .filter(Boolean)
+    .join(" ");
 }
 
 type PillButtonProps = {
   variant?: PillVariant;
+  size?: PillSize;
+  fullWidth?: boolean;
   /** 값이 있으면 링크로 렌더. 외부(http)면 <a>, 내부면 next/link. */
   href?: string;
   external?: boolean;
@@ -58,13 +71,15 @@ type PillButtonProps = {
 
 export function PillButton({
   variant = "primary",
+  size = "md",
+  fullWidth = true,
   href,
   external,
   className = "",
   children,
   ...buttonProps
 }: PillButtonProps) {
-  const cls = pillClasses(variant, className);
+  const cls = pillClasses(variant, { size, fullWidth, extra: className });
 
   if (href) {
     const isExternal = external ?? /^https?:\/\//.test(href);
