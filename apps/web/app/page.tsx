@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, type AuthUser, type MonthlyShelf, type ShelfBookItem } from "@booktalk/api-client";
+import { useRouter } from "next/navigation";
+import {
+  apiClient,
+  authStorage,
+  type AuthUser,
+  type MonthlyShelf,
+  type ShelfBookItem,
+} from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BellIcon } from "../components/icons";
 import { BottomNav } from "../components/bottom-nav";
@@ -172,10 +179,12 @@ function BookColumn({ books }: { books: ShelfBookItem[] }) {
 // ---------- 메인 페이지 ----------
 export default function HomePage() {
   const ready = useRequireAuth();
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
   const [totalBooks, setTotalBooks] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("읽은 책");
   const [viewMode, setViewMode] = useState<ViewMode>("펼치기");
 
@@ -184,6 +193,7 @@ export default function HomePage() {
     let cancelled = false;
 
     async function load() {
+      setLoadError(null);
       try {
         const [me, currentShelf, completed] = await Promise.all([
           apiClient.getMe(),
@@ -195,6 +205,16 @@ export default function HomePage() {
           setShelf(currentShelf);
           setTotalBooks(completed.length);
         }
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : "";
+        // 토큰 만료/무효 → 조용히 빈 화면 대신 로그인으로
+        if (msg.includes("로그인")) {
+          authStorage.clearTokens();
+          router.replace("/login");
+          return;
+        }
+        setLoadError("책장을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -202,7 +222,7 @@ export default function HomePage() {
 
     load();
     return () => { cancelled = true; };
-  }, [ready]);
+  }, [ready, router]);
 
   if (!ready) return null;
 
@@ -271,6 +291,16 @@ export default function HomePage() {
       <div className="mt-5 px-5">
         {loading ? (
           <p className="text-center text-sm text-gray-300">불러오는 중...</p>
+        ) : loadError ? (
+          <div className="flex flex-col items-center gap-3 rounded-md border-2 border-dashed border-gray-200 py-14">
+            <p className="text-sm text-gray-400">{loadError}</p>
+            <button
+              onClick={() => location.reload()}
+              className="rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : tab !== "읽은 책" ? (
           <div
             className="flex items-center justify-center border-2 border-dashed border-gray-200"
