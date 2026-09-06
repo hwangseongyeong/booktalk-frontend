@@ -8,6 +8,7 @@ import {
   getSavedNaverState,
   type OAuthProviderKey,
 } from "../../../../lib/oauthProviders";
+import { postLoginPath } from "../../../../lib/onboarding";
 
 const VALID_PROVIDERS: OAuthProviderKey[] = ["kakao", "naver", "google", "facebook"];
 
@@ -57,7 +58,8 @@ function CallbackInner() {
       })
       .then((tokens) => {
         authStorage.setTokens(tokens.accessToken, tokens.refreshToken);
-        router.replace("/");
+        // 온보딩(닉네임·프로필·친구초대) 미완료 사용자는 온보딩으로, 완료 사용자는 홈으로.
+        router.replace(postLoginPath());
       })
       .catch((e) => {
         setError(e instanceof Error ? e.message : "로그인에 실패했습니다.");
