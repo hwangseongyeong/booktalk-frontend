@@ -89,6 +89,86 @@ function BookshelfFrame({ books, user }: { books: ShelfBookItem[]; user: AuthUse
   );
 }
 
+// ---------- 펼치기(그리드) 뷰 ----------
+function ShelfEmpty() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-md border-2 border-dashed border-gray-200 py-14">
+      <p className="text-sm text-gray-400">이달의 첫 번째 책을 추가해보세요</p>
+      <Link
+        href="/books"
+        className="rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
+      >
+        + 책 등록
+      </Link>
+    </div>
+  );
+}
+
+function BookCard({ book }: { book: ShelfBookItem }) {
+  const color = book.primaryColor ?? fallbackColor(book.title);
+  return (
+    <div
+      title={book.title}
+      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
+    >
+      {book.spineImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+          style={{ backgroundColor: color }}
+        >
+          <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+          {book.author && (
+            <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BookGrid({ books }: { books: ShelfBookItem[] }) {
+  if (books.length === 0) return <ShelfEmpty />;
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {books.map((book) => (
+        <BookCard key={book.readingRecordId} book={book} />
+      ))}
+    </div>
+  );
+}
+
+// ---------- 세로 쌓기 뷰 ----------
+function BookColumn({ books }: { books: ShelfBookItem[] }) {
+  if (books.length === 0) return <ShelfEmpty />;
+  return (
+    <div className="flex flex-col gap-2">
+      {books.map((book) => (
+        <div
+          key={book.readingRecordId}
+          className="flex items-center gap-3 rounded-md border-2 border-gray-900 p-2.5"
+        >
+          <div
+            className="h-14 w-10 shrink-0 overflow-hidden rounded-sm"
+            style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+          >
+            {book.spineImageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-gray-900">{book.title}</p>
+            {book.author && <p className="truncate text-xs text-gray-500">{book.author}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ---------- 메인 페이지 ----------
 export default function HomePage() {
   const ready = useRequireAuth();
@@ -97,7 +177,7 @@ export default function HomePage() {
   const [totalBooks, setTotalBooks] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<ShelfTab>("읽은 책");
-  const [viewMode, setViewMode] = useState<ViewMode>("가로");
+  const [viewMode, setViewMode] = useState<ViewMode>("펼치기");
 
   useEffect(() => {
     if (!ready) return;
@@ -191,16 +271,33 @@ export default function HomePage() {
       <div className="mt-5 px-5">
         {loading ? (
           <p className="text-center text-sm text-gray-300">불러오는 중...</p>
-        ) : tab === "읽은 책" ? (
-          <BookshelfFrame books={shelf?.books ?? []} user={user} />
-        ) : (
+        ) : tab !== "읽은 책" ? (
           <div
             className="flex items-center justify-center border-2 border-dashed border-gray-200"
             style={{ height: SECTION_HEIGHT * SHELF_COUNT }}
           >
             <p className="text-sm text-gray-400">준비 중</p>
           </div>
+        ) : viewMode === "펼치기" ? (
+          <BookGrid books={shelf?.books ?? []} />
+        ) : viewMode === "세로" ? (
+          <BookColumn books={shelf?.books ?? []} />
+        ) : (
+          <BookshelfFrame books={shelf?.books ?? []} user={user} />
         )}
+
+        {/* 펼치기/세로 뷰에서도 책 추가 진입점 (가로 뷰는 프레임 안에 버튼이 있음) */}
+        {!loading &&
+          tab === "읽은 책" &&
+          viewMode !== "가로" &&
+          (shelf?.books.length ?? 0) > 0 && (
+            <Link
+              href="/books"
+              className="mt-4 flex justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
+            >
+              + 책 등록
+            </Link>
+          )}
       </div>
 
       <BottomNav />
