@@ -30,7 +30,7 @@ const ITEMS: NavItem[] = [
   { label: "책장", Icon: NavShelfIcon, href: "/shelf", match: ["/shelf"] },
   { label: "기록", Icon: NavRecordIcon, href: "/records", match: ["/records", "/books"] },
   { label: "소통", Icon: NavChatIcon, href: null },
-  { label: "마이", Icon: NavMyIcon, href: null },
+  { label: "마이", Icon: NavMyIcon, href: "/my", match: ["/my"] },
 ];
 
 export function BottomNav() {
