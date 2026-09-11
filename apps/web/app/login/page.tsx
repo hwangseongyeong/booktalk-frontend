@@ -11,7 +11,7 @@ import {
 import { PillButton, ScreenShell } from "../../components/ui";
 
 const ONBOARDING_KEY = "booktalk_onboarding_done";
-const PROVIDERS: OAuthProviderKey[] = ["kakao", "naver", "google", "facebook"];
+const PROVIDERS: OAuthProviderKey[] = ["kakao", "naver", "google"];
 
 function Wordmark({ logoSize = 116 }: { logoSize?: number }) {
   return (
