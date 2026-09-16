@@ -30,6 +30,7 @@ type ShelfEntry = {
   key: string;
   title: string;
   author: string | null;
+  coverImageUrl: string | null;
   spineImageUrl: string | null;
   primaryColor: string | null;
 };
@@ -39,6 +40,7 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
     key: String(record.id),
     title: record.book.title,
     author: record.book.author,
+    coverImageUrl: record.book.coverImageUrl,
     spineImageUrl: record.book.spineImageUrl,
     primaryColor: record.book.primaryColor,
   };
@@ -136,31 +138,25 @@ function ShelfEmpty() {
 }
 
 function BookCard({ book }: { book: ShelfEntry }) {
-  if (book.spineImageUrl) {
-    return (
-      <div
-        title={book.title}
-        className="flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border-2 border-gray-900 bg-white p-2"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={book.spineImageUrl}
-          alt={book.title}
-          className="h-full w-auto rounded-sm shadow-sm"
-        />
-      </div>
-    );
-  }
-
+  const image = book.coverImageUrl ?? book.spineImageUrl;
   return (
     <div
       title={book.title}
-      className="flex aspect-[3/4] flex-col items-center justify-center gap-1 overflow-hidden rounded-md border-2 border-gray-900 p-2 text-center"
-      style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
     >
-      <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
-      {book.author && (
-        <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={book.title} className="h-full w-full object-cover" />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+          style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+        >
+          <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+          {book.author && (
+            <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
+          )}
+        </div>
       )}
     </div>
   );
