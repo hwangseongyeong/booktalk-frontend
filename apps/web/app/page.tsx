@@ -30,7 +30,6 @@ type ShelfEntry = {
   key: string;
   title: string;
   author: string | null;
-  coverImageUrl: string | null;
   spineImageUrl: string | null;
   primaryColor: string | null;
 };
@@ -40,7 +39,6 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
     key: String(record.id),
     title: record.book.title,
     author: record.book.author,
-    coverImageUrl: record.book.coverImageUrl,
     spineImageUrl: record.book.spineImageUrl,
     primaryColor: record.book.primaryColor,
   };
@@ -51,7 +49,24 @@ const SHELF_COUNT = 5;
 const SECTION_HEIGHT = 100;
 const BOOK_HEIGHT = 88;
 
+/**
+ * 세워둔 책등 하나. 백엔드에서 생성/캐싱된 spineImageUrl을 원래 비율(높이 고정, 너비 자동)로
+ * 렌더링만 한다. 아직 책등 이미지가 없으면 primaryColor 배경에 세로 글자 fallback을 보여준다.
+ */
 function BookSpine({ book, height }: { book: ShelfEntry; height: number }) {
+  if (book.spineImageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={book.spineImageUrl}
+        alt={book.title}
+        title={book.title}
+        style={{ height, width: "auto" }}
+        className="shrink-0 rounded-t-sm shadow-sm"
+      />
+    );
+  }
+
   const color = book.primaryColor ?? fallbackColor(book.title);
   const maxChars = Math.max(2, Math.floor((height - 16) / 14));
   const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
@@ -60,16 +75,11 @@ function BookSpine({ book, height }: { book: ShelfEntry; height: number }) {
     <div
       title={book.title}
       className="flex w-7 shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-sm"
-      style={{ height, backgroundColor: book.spineImageUrl ? undefined : color }}
+      style={{ height, backgroundColor: color }}
     >
-      {book.spineImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={book.spineImageUrl} alt={book.title} className="h-full w-full object-cover" />
-      ) : (
-        Array.from(shortTitle).map((char, i) => (
-          <span key={i} className="text-[10px] leading-tight text-white/85">{char}</span>
-        ))
-      )}
+      {Array.from(shortTitle).map((char, i) => (
+        <span key={i} className="text-[10px] leading-tight text-white/85">{char}</span>
+      ))}
     </div>
   );
 }
@@ -126,25 +136,31 @@ function ShelfEmpty() {
 }
 
 function BookCard({ book }: { book: ShelfEntry }) {
-  const image = book.coverImageUrl ?? book.spineImageUrl;
+  if (book.spineImageUrl) {
+    return (
+      <div
+        title={book.title}
+        className="flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border-2 border-gray-900 bg-white p-2"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={book.spineImageUrl}
+          alt={book.title}
+          className="h-full w-auto rounded-sm shadow-sm"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       title={book.title}
-      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
+      className="flex aspect-[3/4] flex-col items-center justify-center gap-1 overflow-hidden rounded-md border-2 border-gray-900 p-2 text-center"
+      style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
     >
-      {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={book.title} className="h-full w-full object-cover" />
-      ) : (
-        <div
-          className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
-          style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
-        >
-          <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
-          {book.author && (
-            <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
-          )}
-        </div>
+      <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+      {book.author && (
+        <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
       )}
     </div>
   );
@@ -162,33 +178,25 @@ function BookGrid({ books }: { books: ShelfEntry[] }) {
 }
 
 // ---------- 세로 쌓기 뷰 ----------
+// 책등을 세운 채 세로로 나열하고, 각 행에 제목/저자를 함께 보여준다.
+const COLUMN_SPINE_HEIGHT = 64;
+
 function BookColumn({ books }: { books: ShelfEntry[] }) {
   if (books.length === 0) return <ShelfEmpty />;
   return (
     <div className="flex flex-col gap-2">
-      {books.map((book) => {
-        const image = book.coverImageUrl ?? book.spineImageUrl;
-        return (
-          <div
-            key={book.key}
-            className="flex items-center gap-3 rounded-md border-2 border-gray-900 p-2.5"
-          >
-            <div
-              className="h-14 w-10 shrink-0 overflow-hidden rounded-sm"
-              style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
-            >
-              {image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={image} alt={book.title} className="h-full w-full object-cover" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-gray-900">{book.title}</p>
-              {book.author && <p className="truncate text-xs text-gray-500">{book.author}</p>}
-            </div>
+      {books.map((book) => (
+        <div
+          key={book.key}
+          className="flex items-center gap-3 rounded-md border-2 border-gray-900 p-2.5"
+        >
+          <BookSpine book={book} height={COLUMN_SPINE_HEIGHT} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-gray-900">{book.title}</p>
+            {book.author && <p className="truncate text-xs text-gray-500">{book.author}</p>}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
