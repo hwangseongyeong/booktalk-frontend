@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 import { PillButton, TextField } from "../../components/ui";
 import { BottomNav } from "../../components/bottom-nav";
@@ -38,6 +38,7 @@ export default function BooksPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [registeringIsbn, setRegisteringIsbn] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
 
   async function loadBooks(searchQuery?: string) {
     setLoading(true);
@@ -52,12 +53,9 @@ export default function BooksPage() {
     }
   }
 
-  useEffect(() => {
-    loadBooks();
-  }, []);
-
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
+    setSearched(true);
     await loadBooks(query);
   }
 
@@ -139,7 +137,7 @@ export default function BooksPage() {
       {/* 검색 결과 */}
       <div className="mt-6 flex flex-col gap-3">
         {loading && <p className="text-sm font-medium text-muted">불러오는 중...</p>}
-        {!loading && results.length === 0 && (
+        {!loading && searched && results.length === 0 && (
           <p className="text-sm font-medium text-muted">
             검색 결과가 없어요. 다른 키워드로 검색해보세요.
           </p>
