@@ -119,6 +119,34 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+/* ---------- 공유 (헤더 우상단, iOS 스타일 박스+위 화살표) ---------- */
+export function ShareIcon({ size = 26, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden {...props}>
+      <path d="M13 3 L13 16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 7 L13 3 L17 7" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 11 L5 11 L5 22 L21 22 L21 11 L19 11" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ---------- 책 3권 (빈 상태 일러스트) ---------- */
+export function BooksStackIcon({ size = 48, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden {...props}>
+      <rect x="7" y="14" width="9" height="24" rx="1.5" stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" />
+      <rect x="18" y="10" width="9" height="28" rx="1.5" stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round" />
+      <rect
+        x="29.5" y="15" width="9" height="24" rx="1.5"
+        transform="rotate(11 34 27)"
+        stroke="currentColor" strokeWidth={2.2} strokeLinejoin="round"
+      />
+      <line x1="9.5" y1="20" x2="13.5" y2="20" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      <line x1="20.5" y1="16" x2="24.5" y2="16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /* ---------- 알림 ---------- */
 export function BellIcon({ size = 26, ...props }: IconProps) {
   return (

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 import { PillButton, TextField } from "../../components/ui";
-import { PlusIcon } from "../../components/icons";
 import { BottomNav } from "../../components/bottom-nav";
 
 // 검색 결과용 표지 썸네일. 표지 URL이 없거나 로드에 실패하면 회색 블록으로 대체한다(피그마 톤).
@@ -40,10 +39,6 @@ export default function BooksPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [registeringIsbn, setRegisteringIsbn] = useState<string | null>(null);
 
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", author: "", publisher: "", isbn: "", coverImageUrl: "" });
-  const [submitting, setSubmitting] = useState(false);
-
   async function loadBooks(searchQuery?: string) {
     setLoading(true);
     setError(null);
@@ -64,34 +59,6 @@ export default function BooksPage() {
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     await loadBooks(query);
-  }
-
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.title.trim()) {
-      setError("제목은 필수입니다.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-    try {
-      await apiClient.registerBook({
-        title: form.title.trim(),
-        author: form.author.trim() || undefined,
-        publisher: form.publisher.trim() || undefined,
-        isbn: form.isbn.trim() || undefined,
-        coverImageUrl: form.coverImageUrl.trim() || undefined,
-      });
-      setForm({ title: "", author: "", publisher: "", isbn: "", coverImageUrl: "" });
-      setShowForm(false);
-      setMessage("책이 등록되었습니다.");
-      await loadBooks(query);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "책 등록에 실패했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   // 카카오 검색 결과(id 없음)를 우리 DB에 등록. 등록 후 목록을 새로고침하면 "읽기 시작" 버튼으로 바뀐다.
@@ -154,63 +121,6 @@ export default function BooksPage() {
         </PillButton>
       </form>
 
-      {/* 직접 책 등록 */}
-      <button
-        type="button"
-        onClick={() => setShowForm((v) => !v)}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-field border-2 border-dashed border-muted-light py-3 text-sm font-bold text-muted transition-colors hover:border-ink hover:text-ink"
-      >
-        {showForm ? (
-          "직접 등록 닫기"
-        ) : (
-          <>
-            <PlusIcon size={18} />
-            직접 책 등록
-          </>
-        )}
-      </button>
-
-      {showForm && (
-        <form
-          onSubmit={handleRegister}
-          className="mt-3 flex flex-col gap-3 rounded-card border-bold border-line bg-paper-pure p-5"
-        >
-          <TextField
-            label="책 제목"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="책 제목"
-          />
-          <TextField
-            label="저자"
-            value={form.author}
-            onChange={(e) => setForm({ ...form, author: e.target.value })}
-            placeholder="저자"
-          />
-          <TextField
-            label="출판사"
-            value={form.publisher}
-            onChange={(e) => setForm({ ...form, publisher: e.target.value })}
-            placeholder="출판사"
-          />
-          <TextField
-            label="ISBN (선택)"
-            value={form.isbn}
-            onChange={(e) => setForm({ ...form, isbn: e.target.value })}
-            placeholder="ISBN"
-          />
-          <TextField
-            label="표지 이미지 URL (선택)"
-            value={form.coverImageUrl}
-            onChange={(e) => setForm({ ...form, coverImageUrl: e.target.value })}
-            placeholder="https://"
-          />
-          <PillButton type="submit" disabled={submitting} className="mt-1">
-            {submitting ? "등록 중..." : "등록하기"}
-          </PillButton>
-        </form>
-      )}
-
       {message && <p className="mt-4 text-sm font-bold text-green-600">{message}</p>}
       {error && (
         <p className="mt-4 text-sm font-bold text-red-600">
@@ -231,7 +141,7 @@ export default function BooksPage() {
         {loading && <p className="text-sm font-medium text-muted">불러오는 중...</p>}
         {!loading && results.length === 0 && (
           <p className="text-sm font-medium text-muted">
-            검색 결과가 없어요. 다른 키워드로 검색하거나 직접 등록해보세요.
+            검색 결과가 없어요. 다른 키워드로 검색해보세요.
           </p>
         )}
         {results.map((item) => (

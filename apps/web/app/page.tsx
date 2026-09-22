@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, authStorage, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
-import { BellIcon } from "../components/icons";
+import { BellIcon, ShareIcon, BooksStackIcon } from "../components/icons";
 import { BottomNav } from "../components/bottom-nav";
 
 // ---------- 색상 폴백 ----------
@@ -22,7 +22,6 @@ function fallbackColor(seed: string) {
 }
 
 // ---------- 타입 ----------
-type ViewMode = "세로" | "가로" | "펼치기";
 type ShelfTab = "읽은 책" | "읽는 중" | "읽고 싶은책";
 
 /** 책장에 올릴 한 권. 독서 기록(ReadingRecord)에서 화면에 필요한 값만 뽑은 형태. */
@@ -46,93 +45,39 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
   };
 }
 
-// ---------- 책등 (가로 쌓기) ----------
-const SHELF_COUNT = 5;
-const SECTION_HEIGHT = 100;
-const BOOK_HEIGHT = 88;
+// ---------- 탭별 빈 상태 ----------
+const EMPTY_CONFIG: Record<
+  ShelfTab,
+  { title: string; subtitle: [string, string]; buttonLabel: string }
+> = {
+  "읽은 책": {
+    title: "아직 읽은 책이 없어요",
+    subtitle: ["완독한 책을 등록하면", "나만의 독서 기록이 쌓여요"],
+    buttonLabel: "+ 책 등록",
+  },
+  "읽는 중": {
+    title: "지금 읽고 있는 책이 없어요",
+    subtitle: ["요즘 펼친 책을 등록하고", "오늘의 독서를 기록해보세요"],
+    buttonLabel: "+ 책 추가",
+  },
+  "읽고 싶은책": {
+    title: "아직 담아둔 책이 없어요",
+    subtitle: ["읽고 싶은 책을 미리 담아두면", "다음에 뭘 읽을지 고민이 줄어들어요"],
+    buttonLabel: "+ 책 등록",
+  },
+};
 
-/**
- * 세워둔 책등 하나. 백엔드에서 생성/캐싱된 spineImageUrl을 원래 비율(높이 고정, 너비 자동)로
- * 렌더링만 한다. 아직 책등 이미지가 없으면 primaryColor 배경에 세로 글자 fallback을 보여준다.
- */
-function BookSpine({ book, height }: { book: ShelfEntry; height: number }) {
-  if (book.spineImageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={book.spineImageUrl}
-        alt={book.title}
-        title={book.title}
-        style={{ height, width: "auto" }}
-        className="shrink-0 rounded-t-sm shadow-sm"
-      />
-    );
-  }
-
-  const color = book.primaryColor ?? fallbackColor(book.title);
-  const maxChars = Math.max(2, Math.floor((height - 16) / 14));
-  const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
-
+function ShelfEmptyState({ tab }: { tab: ShelfTab }) {
+  const { title, subtitle } = EMPTY_CONFIG[tab];
   return (
-    <div
-      title={book.title}
-      className="flex w-7 shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-sm"
-      style={{ height, backgroundColor: color }}
-    >
-      {Array.from(shortTitle).map((char, i) => (
-        <span key={i} className="text-[10px] leading-tight text-white/85">{char}</span>
-      ))}
-    </div>
-  );
-}
-
-function BookshelfFrame({ books }: { books: ShelfEntry[] }) {
-  return (
-    <div className="relative w-full border-2 border-gray-900">
-      {Array.from({ length: SHELF_COUNT }).map((_, i) => (
-        <div
-          key={i}
-          className="relative border-b-2 border-gray-900"
-          style={{ height: SECTION_HEIGHT }}
-        >
-          {/* 첫 번째 칸에만 책등 표시 */}
-          {i === 0 && books.length > 0 && (
-            <div className="absolute bottom-0 left-2 flex items-end gap-1 overflow-x-auto pr-2">
-              {books.map((book) => (
-                <BookSpine key={book.key} book={book} height={BOOK_HEIGHT} />
-              ))}
-            </div>
-          )}
-          {i === 0 && books.length === 0 && (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-xs text-gray-300">아직 완독한 책이 없어요</p>
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* + 책 등록 버튼 */}
-      <Link
-        href="/books"
-        className="absolute bottom-4 left-4 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
-      >
-        + 책 등록
-      </Link>
-    </div>
-  );
-}
-
-// ---------- 펼치기(그리드) 뷰 ----------
-function ShelfEmpty() {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-md border-2 border-dashed border-gray-200 py-14">
-      <p className="text-sm text-gray-400">아직 완독한 책이 없어요</p>
-      <Link
-        href="/books"
-        className="rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
-      >
-        + 책 등록
-      </Link>
+    <div className="flex flex-col items-center gap-4 py-24 text-center">
+      <BooksStackIcon size={52} className="text-gray-300" />
+      <p className="text-xl font-bold text-gray-900">{title}</p>
+      <p className="text-sm leading-relaxed text-gray-400">
+        {subtitle[0]}
+        <br />
+        {subtitle[1]}
+      </p>
     </div>
   );
 }
@@ -163,35 +108,10 @@ function BookCard({ book }: { book: ShelfEntry }) {
 }
 
 function BookGrid({ books }: { books: ShelfEntry[] }) {
-  if (books.length === 0) return <ShelfEmpty />;
   return (
     <div className="grid grid-cols-3 gap-3">
       {books.map((book) => (
         <BookCard key={book.key} book={book} />
-      ))}
-    </div>
-  );
-}
-
-// ---------- 세로 쌓기 뷰 ----------
-// 책등을 세운 채 세로로 나열하고, 각 행에 제목/저자를 함께 보여준다.
-const COLUMN_SPINE_HEIGHT = 64;
-
-function BookColumn({ books }: { books: ShelfEntry[] }) {
-  if (books.length === 0) return <ShelfEmpty />;
-  return (
-    <div className="flex flex-col gap-2">
-      {books.map((book) => (
-        <div
-          key={book.key}
-          className="flex items-center gap-3 rounded-md border-2 border-gray-900 p-2.5"
-        >
-          <BookSpine book={book} height={COLUMN_SPINE_HEIGHT} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-gray-900">{book.title}</p>
-            {book.author && <p className="truncate text-xs text-gray-500">{book.author}</p>}
-          </div>
-        </div>
       ))}
     </div>
   );
@@ -202,10 +122,10 @@ export default function HomePage() {
   const ready = useRequireAuth();
   const router = useRouter();
   const [completed, setCompleted] = useState<ShelfEntry[]>([]);
+  const [reading, setReading] = useState<ShelfEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tab, setTab] = useState<ShelfTab>("읽은 책");
-  const [viewMode, setViewMode] = useState<ViewMode>("펼치기");
+  const [tab, setTab] = useState<ShelfTab>("읽는 중");
 
   useEffect(() => {
     if (!ready) return;
@@ -214,8 +134,14 @@ export default function HomePage() {
     async function load() {
       setLoadError(null);
       try {
-        const records = await apiClient.getMyReadingRecords("COMPLETED");
-        if (!cancelled) setCompleted(records.map(toShelfEntry));
+        const [completedRecords, readingRecords] = await Promise.all([
+          apiClient.getMyReadingRecords("COMPLETED"),
+          apiClient.getMyReadingRecords("READING"),
+        ]);
+        if (!cancelled) {
+          setCompleted(completedRecords.map(toShelfEntry));
+          setReading(readingRecords.map(toShelfEntry));
+        }
       } catch (e) {
         if (cancelled) return;
         const msg = e instanceof Error ? e.message : "";
@@ -237,27 +163,32 @@ export default function HomePage() {
 
   if (!ready) return null;
 
-  const VIEW_LABELS: { key: ViewMode; label: string }[] = [
-    { key: "세로", label: "세로 쌓기" },
-    { key: "가로", label: "가로 쌓기" },
-    { key: "펼치기", label: "펼치기" },
-  ];
-
-  const totalBooks = loading ? null : completed.length;
+  // 읽고 싶은책은 아직 API 상태값이 없어 항상 빈 목록으로 둔다.
+  const wantToRead: ShelfEntry[] = [];
+  const activeBooks =
+    tab === "읽은 책" ? completed : tab === "읽는 중" ? reading : wantToRead;
+  const hasBooks = activeBooks.length > 0;
+  // 통계는 책이 있을 때만 노출한다(빈 상태 시안 기준).
+  const showStats = !loading && !loadError && tab === "읽은 책" && hasBooks;
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-white pb-24">
       {/* 헤더 */}
       <header className="flex items-center justify-between px-5 pt-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">책장</h1>
-        <button className="text-gray-800">
-          <BellIcon />
-        </button>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">내 책장</h1>
+        <div className="flex items-center gap-3 text-gray-800">
+          <button aria-label="공유">
+            <ShareIcon />
+          </button>
+          <button aria-label="알림">
+            <BellIcon />
+          </button>
+        </div>
       </header>
 
       {/* 탭 */}
       <div className="mt-5 flex gap-6 border-b border-gray-200 px-5">
-        {(["읽은 책", "읽는 중", "읽고 싶은책"] as ShelfTab[]).map((t) => (
+        {(["읽는 중", "읽은 책", "읽고 싶은책"] as ShelfTab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -272,33 +203,14 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* 뷰 모드 토글 */}
-      <div className="mt-4 flex gap-2 px-5">
-        {VIEW_LABELS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setViewMode(key)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              viewMode === key
-                ? "bg-gray-900 text-white"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* 통계 */}
-      <div className="mt-6 px-5">
-        {totalBooks !== null ? (
+      {/* 통계 (읽은 책, 책이 있을 때만) */}
+      {showStats && (
+        <div className="mt-6 px-5">
           <p className="text-center text-base font-semibold text-gray-800">
-            총 <span className="text-2xl font-bold">{totalBooks}</span>권의 책을 읽었어요
+            총 <span className="text-2xl font-bold">{completed.length}</span>권의 책을 읽었어요
           </p>
-        ) : (
-          <p className="text-center text-base font-semibold text-gray-300">불러오는 중...</p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 책장 */}
       <div className="mt-5 px-5">
@@ -314,34 +226,30 @@ export default function HomePage() {
               다시 시도
             </button>
           </div>
-        ) : tab !== "읽은 책" ? (
-          <div
-            className="flex items-center justify-center border-2 border-dashed border-gray-200"
-            style={{ height: SECTION_HEIGHT * SHELF_COUNT }}
-          >
-            <p className="text-sm text-gray-400">준비 중</p>
-          </div>
-        ) : viewMode === "펼치기" ? (
-          <BookGrid books={completed} />
-        ) : viewMode === "세로" ? (
-          <BookColumn books={completed} />
+        ) : !hasBooks ? (
+          <ShelfEmptyState tab={tab} />
         ) : (
-          <BookshelfFrame books={completed} />
+          <BookGrid books={activeBooks} />
         )}
 
-        {/* 펼치기/세로 뷰에서도 책 추가 진입점 (가로 뷰는 프레임 안에 버튼이 있음) */}
-        {!loading &&
-          !loadError &&
-          tab === "읽은 책" &&
-          viewMode !== "가로" &&
-          completed.length > 0 && (
-            <Link
-              href="/books"
-              className="mt-4 flex justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
-            >
-              + 책 등록
-            </Link>
-          )}
+        {/* 하단 책 추가 진입점.
+            빈 상태: 전체 너비 버튼(탭별 라벨). 책 있음: 기본 등록 버튼. */}
+        {!loading && !loadError && !hasBooks && (
+          <Link
+            href="/books"
+            className="mt-4 flex justify-center rounded-full bg-gray-900 px-6 py-3.5 text-sm font-medium text-white"
+          >
+            {EMPTY_CONFIG[tab].buttonLabel}
+          </Link>
+        )}
+        {!loading && !loadError && hasBooks && (
+          <Link
+            href="/books"
+            className="mt-4 flex justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
+          >
+            + 책 등록
+          </Link>
+        )}
       </div>
 
       <BottomNav />
