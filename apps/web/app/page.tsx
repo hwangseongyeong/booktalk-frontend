@@ -18,9 +18,18 @@ function reviewText(note: string | null): string {
     .trim();
 }
 
-function stars(rating: number | null): string {
-  if (!rating || rating <= 0) return "";
-  return "★".repeat(Math.round(rating));
+/** 별점을 항상 5개로 보여주고, 점수만큼 진하게 칠한다. */
+function Stars({ rating }: { rating: number }) {
+  const filled = Math.round(rating);
+  return (
+    <span className="ml-2">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} className={n <= filled ? "text-gray-900" : "text-gray-300"}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
 }
 
 /** 진행 중 카드의 도서 표지(표지 없으면 책등 → 색상 폴백). */
@@ -174,9 +183,7 @@ export default function HomePage() {
                   <p className="text-base font-bold text-gray-900">{record.book.title}</p>
                   <p className="mt-1 text-sm text-gray-400">
                     완독일 {record.endDate}
-                    {record.rating != null && (
-                      <span className="ml-2 text-gray-900">{stars(record.rating)}</span>
-                    )}
+                    {record.rating != null && <Stars rating={record.rating} />}
                   </p>
                   {review && <p className="mt-3 text-sm text-gray-700">&quot;{review}&quot;</p>}
                   {record.myWords.length > 0 && (
