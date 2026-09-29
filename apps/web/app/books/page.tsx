@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiClient, type BookSearchResult } from "@booktalk/api-client";
 import { PillButton, TextField } from "../../components/ui";
 import { BottomNav } from "../../components/bottom-nav";
@@ -32,6 +33,7 @@ function BookCover({ title, coverImageUrl }: { title: string; coverImageUrl: str
 }
 
 export default function BooksPage() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,10 +83,10 @@ export default function BooksPage() {
         bookId = book.id;
       }
       await apiClient.startReadingRecord({ bookId });
-      setMessage("읽기 시작으로 등록했어요. '독서 기록'에서 확인하세요.");
+      // 읽기 시작 후 홈으로 이동해 '지금 읽고 있어요'에서 바로 확인하도록 한다.
+      router.push("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했습니다.");
-    } finally {
       setStartingKey(null);
     }
   }
