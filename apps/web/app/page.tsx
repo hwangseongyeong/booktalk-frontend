@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookShelf } from "@booktalk/ui";
-import { apiClient, type MonthlyShelf } from "@booktalk/api-client";
+import { apiClient, type AuthUser, type MonthlyShelf } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BottomNav } from "../components/bottom-nav";
+import { Avatar } from "../components/ui";
 
 function currentYearMonth() {
   const now = new Date();
@@ -29,6 +30,18 @@ export default function HomePage() {
   const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    // 프로필은 헤더 아바타 용도라 실패해도 화면 진행에 영향 없다.
+    apiClient.getMyProfile().then(
+      (me) => { if (!cancelled) setProfile(me); },
+      () => {},
+    );
+    return () => { cancelled = true; };
+  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -66,7 +79,28 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-md p-6 pb-24">
-      <div className="mt-2 flex items-center justify-between">
+      {/* 상단: 인사 + 프로필 아바타 */}
+      <header className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {profile ? (
+            <>
+              <span className="font-medium text-gray-900">{profile.nickname}</span>님의 서재
+            </>
+          ) : (
+            "내 서재"
+          )}
+        </p>
+        <Link href="/my" aria-label="마이 페이지">
+          <Avatar
+            nickname={profile?.nickname}
+            src={profile?.profileImageUrl}
+            color={profile?.profileColor ?? undefined}
+            size={34}
+          />
+        </Link>
+      </header>
+
+      <div className="mt-4 flex items-center justify-between">
         <button
           onClick={() => setYearMonth((v) => shiftYearMonth(v, -1))}
           className="rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-100"
