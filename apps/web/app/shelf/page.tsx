@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, authStorage, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, authStorage, type AuthUser, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { BellIcon, ShareIcon, BooksStackIcon } from "../../components/icons";
 import { BottomNav } from "../../components/bottom-nav";
+import { Avatar } from "../../components/ui";
 
 // ---------- 색상 폴백 ----------
 const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
@@ -126,6 +127,18 @@ export default function ShelfPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("읽는 중");
+  const [profile, setProfile] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    // 프로필은 헤더 아바타 용도라 실패해도 화면 진행에 영향 없다.
+    apiClient.getMyProfile().then(
+      (me) => { if (!cancelled) setProfile(me); },
+      () => {},
+    );
+    return () => { cancelled = true; };
+  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -183,6 +196,14 @@ export default function ShelfPage() {
           <button aria-label="알림">
             <BellIcon />
           </button>
+          <Link href="/my" aria-label="마이 페이지">
+            <Avatar
+              nickname={profile?.nickname}
+              src={profile?.profileImageUrl}
+              color={profile?.profileColor ?? undefined}
+              size={34}
+            />
+          </Link>
         </div>
       </header>
 
