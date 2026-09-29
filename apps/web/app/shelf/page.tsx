@@ -83,36 +83,46 @@ function ShelfEmptyState({ tab }: { tab: ShelfTab }) {
   );
 }
 
-function BookCard({ book }: { book: ShelfEntry }) {
+function BookCard({ book, showComplete }: { book: ShelfEntry; showComplete?: boolean }) {
   const image = book.coverImageUrl ?? book.spineImageUrl;
   return (
-    <div
-      title={book.title}
-      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
-    >
-      {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={book.title} className="h-full w-full object-cover" />
-      ) : (
-        <div
-          className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
-          style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+    <div className="flex flex-col gap-1.5">
+      <div
+        title={book.title}
+        className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
+      >
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt={book.title} className="h-full w-full object-cover" />
+        ) : (
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+            style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+          >
+            <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+            {book.author && (
+              <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
+            )}
+          </div>
+        )}
+      </div>
+      {showComplete && (
+        <Link
+          href={`/records/${book.key}/complete`}
+          className="flex justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white"
         >
-          <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
-          {book.author && (
-            <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
-          )}
-        </div>
+          완독하기
+        </Link>
       )}
     </div>
   );
 }
 
-function BookGrid({ books }: { books: ShelfEntry[] }) {
+function BookGrid({ books, showComplete }: { books: ShelfEntry[]; showComplete?: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {books.map((book) => (
-        <BookCard key={book.key} book={book} />
+        <BookCard key={book.key} book={book} showComplete={showComplete} />
       ))}
     </div>
   );
@@ -250,7 +260,7 @@ export default function ShelfPage() {
         ) : !hasBooks ? (
           <ShelfEmptyState tab={tab} />
         ) : (
-          <BookGrid books={activeBooks} />
+          <BookGrid books={activeBooks} showComplete={tab === "읽는 중"} />
         )}
 
         {/* 하단 책 추가 진입점.
