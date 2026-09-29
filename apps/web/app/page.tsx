@@ -2,32 +2,54 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookShelf } from "@booktalk/ui";
-import { apiClient, type AuthUser, type MonthlyShelf } from "@booktalk/api-client";
+import { apiClient, type AuthUser, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BottomNav } from "../components/bottom-nav";
 import { Avatar } from "../components/ui";
 
-function currentYearMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+// 완독 기록의 한줄평에는 완독 처리 시 선택한 키워드가 #태그 줄로 함께 저장된다.
+// '나의 한줄' 섹션에서는 태그 줄을 걸러 실제 한줄평만 보여준다.
+function reviewText(note: string | null): string {
+  if (!note) return "";
+  return note
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join(" ")
+    .trim();
 }
 
-function shiftYearMonth(yearMonth: string, delta: number) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+function stars(rating: number | null): string {
+  if (!rating || rating <= 0) return "";
+  return "★".repeat(Math.round(rating));
 }
 
-function formatLabel(yearMonth: string) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  return `${y}년 ${m}월`;
+/** 진행 중 카드의 도서 표지(표지 없으면 책등 → 색상 폴백). */
+function BookCover({ book }: { book: ReadingRecord["book"] }) {
+  const image = book.coverImageUrl ?? book.spineImageUrl;
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={image}
+        alt={book.title}
+        className="h-28 w-20 shrink-0 rounded-md object-cover"
+      />
+    );
+  }
+  return (
+    <div
+      className="flex h-28 w-20 shrink-0 items-center justify-center rounded-md p-2 text-center"
+      style={{ backgroundColor: book.primaryColor ?? "#8B5E3C" }}
+    >
+      <span className="line-clamp-4 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+    </div>
+  );
 }
 
 export default function HomePage() {
   const ready = useRequireAuth();
-  const [yearMonth, setYearMonth] = useState(currentYearMonth());
-  const [shelf, setShelf] = useState<MonthlyShelf | null>(null);
+  const [reading, setReading] = useState<ReadingRecord[]>([]);
+  const [completed, setCompleted] = useState<ReadingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<AuthUser | null>(null);
@@ -45,51 +67,35 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!ready) return;
-
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    apiClient
-      .getMonthlyShelf(yearMonth)
-      .then((result) => {
-        if (!cancelled) setShelf(result);
+    Promise.all([
+      apiClient.getMyReadingRecords("READING"),
+      apiClient.getMyReadingRecords("COMPLETED"),
+    ])
+      .then(([readingRecords, completedRecords]) => {
+        if (cancelled) return;
+        setReading(readingRecords);
+        setCompleted(completedRecords);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "서재를 불러오지 못했습니다.");
+        if (!cancelled) setError(e instanceof Error ? e.message : "홈을 불러오지 못했습니다.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, yearMonth]);
-
-  const shelfBooks =
-    shelf?.books.map((item) => ({
-      id: item.bookId,
-      title: item.title,
-      spineImageUrl: item.spineImageUrl,
-      primaryColor: item.primaryColor,
-    })) ?? [];
+    return () => { cancelled = true; };
+  }, [ready]);
 
   if (!ready) return null;
 
   return (
-    <main className="mx-auto max-w-md p-6 pb-24">
-      {/* 상단: 인사 + 프로필 아바타 */}
-      <header className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {profile ? (
-            <>
-              <span className="font-medium text-gray-900">{profile.nickname}</span>님의 서재
-            </>
-          ) : (
-            "내 서재"
-          )}
-        </p>
+    <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-24 pt-8">
+      {/* 상단 우측: 프로필 아바타 */}
+      <div className="flex justify-end">
         <Link href="/my" aria-label="마이 페이지">
           <Avatar
             nickname={profile?.nickname}
@@ -98,59 +104,87 @@ export default function HomePage() {
             size={34}
           />
         </Link>
-      </header>
-
-      <div className="mt-4 flex items-center justify-between">
-        <button
-          onClick={() => setYearMonth((v) => shiftYearMonth(v, -1))}
-          className="rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-100"
-        >
-          ← 이전 달
-        </button>
-        <h1 className="text-lg font-medium">{formatLabel(yearMonth)}</h1>
-        <button
-          onClick={() => setYearMonth((v) => shiftYearMonth(v, 1))}
-          className="rounded-md px-2 py-1 text-sm text-gray-400 hover:bg-gray-100"
-        >
-          다음 달 →
-        </button>
       </div>
 
-      {loading && <p className="mt-6 text-sm text-gray-400">불러오는 중...</p>}
+      <h1 className="mt-1 text-3xl font-bold leading-snug text-gray-900">
+        지금은 어떤 책과
+        <br />
+        놀고 있나요?
+      </h1>
+
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
-      {!loading && shelf && (
-        <>
-          <p className="mt-4 text-sm text-gray-500">
-            이번 달 읽은 책 <span className="font-medium text-gray-900">{shelf.bookCount}권</span>
-          </p>
+      {/* 지금 읽고 있어요 */}
+      <section className="mt-8">
+        <h2 className="text-lg font-bold text-gray-900">지금 읽고 있어요</h2>
 
-          {shelfBooks.length === 0 ? (
-            <p className="mt-8 text-center text-sm text-gray-400">
-              이 달에 완독한 책이 아직 없어요.{" "}
-              <Link href="/records" className="underline">
-                독서 기록에서 완독 처리하기
-              </Link>
-            </p>
-          ) : (
-            <div className="mt-4">
-              <BookShelf books={shelfBooks} />
-            </div>
-          )}
-
-          <ul className="mt-6 flex flex-col gap-2">
-            {shelf.books.map((item) => (
-              <li key={item.readingRecordId} className="rounded-md border border-gray-200 p-3">
-                <p className="text-sm font-medium">{item.title}</p>
-                <p className="text-xs text-gray-500">
-                  {item.endDate} {item.rating != null && `· ★${item.rating}`}
-                </p>
-                {item.oneLineNote && <p className="mt-1 text-xs text-gray-600">"{item.oneLineNote}"</p>}
-              </li>
+        {loading ? (
+          <p className="mt-4 text-sm text-gray-400">불러오는 중...</p>
+        ) : reading.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white py-10 text-center shadow-sm">
+            <p className="text-sm text-gray-400">지금 읽고 있는 책이 없어요.</p>
+            <Link
+              href="/books"
+              className="rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white"
+            >
+              + 책 등록
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-col gap-4">
+            {reading.map((record) => (
+              <div
+                key={record.id}
+                className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <BookCover book={record.book} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xl font-bold text-gray-900">{record.book.title}</p>
+                  {record.book.author && (
+                    <p className="mt-0.5 truncate text-sm text-gray-400">{record.book.author}</p>
+                  )}
+                  <Link
+                    href={`/records/${record.id}/complete`}
+                    className="mt-3 inline-block rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white"
+                  >
+                    완독하기
+                  </Link>
+                </div>
+              </div>
             ))}
-          </ul>
-        </>
-      )}
+          </div>
+        )}
+      </section>
+
+      {/* 나의 한줄 */}
+      <section className="mt-10">
+        <h2 className="text-lg font-bold text-gray-900">나의 한줄</h2>
+
+        {!loading && completed.length === 0 ? (
+          <p className="mt-4 text-sm text-gray-400">아직 완독한 책이 없어요.</p>
+        ) : (
+          <div className="mt-4 flex flex-col gap-4">
+            {completed.map((record) => {
+              const review = reviewText(record.oneLineNote);
+              return (
+                <div
+                  key={record.id}
+                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                >
+                  <p className="text-base font-bold text-gray-900">{record.book.title}</p>
+                  <p className="mt-1 text-sm text-gray-400">
+                    완독일 {record.endDate}
+                    {record.rating != null && (
+                      <span className="ml-2 text-gray-900">{stars(record.rating)}</span>
+                    )}
+                  </p>
+                  {review && <p className="mt-3 text-sm text-gray-700">&quot;{review}&quot;</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <BottomNav />
     </main>
