@@ -189,7 +189,7 @@ export default function BookBoxPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [yearMonth, setYearMonth] = useState(currentYearMonth());
-  const [viewMode, setViewMode] = useState<ViewMode>("펼치기");
+  const [viewMode, setViewMode] = useState<ViewMode>("가로");
   const [viewOpen, setViewOpen] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
@@ -252,7 +252,7 @@ export default function BookBoxPage() {
     }
   }
 
-  const VIEW_OPTIONS: ViewMode[] = ["펼치기", "가로", "세로"];
+  const VIEW_OPTIONS: ViewMode[] = ["가로", "펼치기", "세로"];
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-white px-5 pb-24 pt-8">
@@ -361,9 +361,9 @@ export default function BookBoxPage() {
               + 책 검색
             </Link>
           </div>
-        ) : viewMode === "펼치기" ? (
-          <SpreadView books={books} />
         ) : viewMode === "가로" ? (
+          <SpreadView books={books} />
+        ) : viewMode === "세로" ? (
           <HorizontalView books={books} />
         ) : (
           <GridView books={books} />
