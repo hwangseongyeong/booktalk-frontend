@@ -179,6 +179,18 @@ export default function HomePage() {
                     )}
                   </p>
                   {review && <p className="mt-3 text-sm text-gray-700">&quot;{review}&quot;</p>}
+                  {record.myWords.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {record.myWords.map((word) => (
+                        <span
+                          key={word}
+                          className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+                        >
+                          {word}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
