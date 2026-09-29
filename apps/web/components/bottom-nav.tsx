@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 로그인 이후 화면 공통 하단 내비게이션 (피그마: 검정 바 + 홈·책장·기록·소통·마이).
+ * 로그인 이후 화면 공통 하단 내비게이션 (피그마: 검정 바 + 홈·책장·북박스·소통·마이).
  * 현재 경로는 usePathname으로 자동 판별하므로 페이지에서 그냥 <BottomNav /> 만 놓으면 된다.
  * 콘텐츠가 가려지지 않도록 페이지 컨테이너에 pb-24 정도의 하단 여백을 준다.
  */
@@ -28,7 +28,7 @@ type NavItem = {
 const ITEMS: NavItem[] = [
   { label: "홈", Icon: NavHomeIcon, href: "/", match: ["/"] },
   { label: "책장", Icon: NavShelfIcon, href: "/shelf", match: ["/shelf"] },
-  { label: "기록", Icon: NavRecordIcon, href: "/records", match: ["/records", "/books"] },
+  { label: "북박스", Icon: NavRecordIcon, href: "/bookbox", match: ["/bookbox", "/books"] },
   { label: "소통", Icon: NavChatIcon, href: null },
   { label: "마이", Icon: NavMyIcon, href: "/my", match: ["/my"] },
 ];
