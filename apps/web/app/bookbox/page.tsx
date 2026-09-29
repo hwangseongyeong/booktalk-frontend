@@ -155,7 +155,8 @@ function GridView({ books }: { books: ShelfEntry[] }) {
   return (
     <div className="grid grid-cols-3 gap-4">
       {books.map((book) => {
-        const image = book.coverImageUrl ?? book.spineImageUrl;
+        // 세로(표지) 뷰는 표지만 사용한다. 책등으로 폴백하면 펼치기 뷰처럼 보이므로 폴백하지 않는다.
+        const image = book.coverImageUrl;
         return image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
