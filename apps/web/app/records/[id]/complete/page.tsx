@@ -89,13 +89,11 @@ export default function CompleteReadingPage() {
     setSubmitting(true);
     setError(null);
     try {
-      // 선택 키워드는 #태그로, 한줄평 앞에 합쳐 저장한다.
-      const tags = selectedKeywords.map((w) => `#${w.replace(/\s+/g, "")}`).join(" ");
-      const note = [tags, oneLineNote.trim()].filter(Boolean).join("\n");
       await apiClient.completeReadingRecord(record.id, {
         endDate,
         rating: rating > 0 ? rating : undefined,
-        oneLineNote: note || undefined,
+        oneLineNote: oneLineNote.trim() || undefined,
+        myWords: selectedKeywords,
       });
       router.replace("/");
     } catch (e) {

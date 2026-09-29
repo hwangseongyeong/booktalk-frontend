@@ -37,6 +37,8 @@ export type ReadingRecord = {
   endDate: string | null;
   rating: number | null;
   oneLineNote: string | null;
+  /** 완독 시 선택한 My Words 키워드(최대 3개) */
+  myWords: string[];
 };
 
 export type ShelfBookItem = {
@@ -49,6 +51,8 @@ export type ShelfBookItem = {
   endDate: string;
   rating: number | null;
   oneLineNote: string | null;
+  /** 완독 시 선택한 My Words 키워드(최대 3개) */
+  myWords: string[];
 };
 
 export type MonthlyShelf = {
@@ -246,7 +250,7 @@ export const apiClient = {
 
   completeReadingRecord: (
     id: number,
-    payload: { endDate?: string; rating?: number; oneLineNote?: string }
+    payload: { endDate?: string; rating?: number; oneLineNote?: string; myWords?: string[] }
   ) =>
     request<ReadingRecord>(`/reading-records/${id}/complete`, {
       method: "PATCH",
