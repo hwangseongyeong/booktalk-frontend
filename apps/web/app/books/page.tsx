@@ -37,8 +37,12 @@ export default function BooksPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [registeringIsbn, setRegisteringIsbn] = useState<string | null>(null);
+  const [startingKey, setStartingKey] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+
+  // 검색 결과 한 건을 식별하는 키(로딩/버튼 상태용). 목록 렌더링 key와 동일하게 맞춘다.
+  const itemKey = (item: BookSearchResult) =>
+    `${item.source}-${item.id ?? item.isbn ?? item.title}`;
 
   async function loadBooks(searchQuery?: string) {
     setLoading(true);
@@ -59,34 +63,29 @@ export default function BooksPage() {
     await loadBooks(query);
   }
 
-  // 카카오 검색 결과(id 없음)를 우리 DB에 등록. 등록 후 목록을 새로고침하면 "읽기 시작" 버튼으로 바뀐다.
-  async function handleRegisterFromSearch(item: BookSearchResult) {
+  // 검색 결과에서 바로 읽기 시작. 로컬 미등록(id 없음)인 카카오 책은 내부적으로 먼저 등록한 뒤 읽기 시작한다.
+  async function handleStartReading(item: BookSearchResult) {
     setError(null);
-    setRegisteringIsbn(item.isbn);
+    setMessage(null);
+    setStartingKey(itemKey(item));
     try {
-      await apiClient.registerBook({
-        title: item.title,
-        author: item.author ?? undefined,
-        publisher: item.publisher ?? undefined,
-        isbn: item.isbn ?? undefined,
-        coverImageUrl: item.coverImageUrl ?? undefined,
-      });
-      setMessage("책이 등록되었어요. 이제 '읽기 시작'을 눌러보세요.");
-      await loadBooks(query);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "책 등록에 실패했습니다.");
-    } finally {
-      setRegisteringIsbn(null);
-    }
-  }
-
-  async function handleStartReading(bookId: number) {
-    setError(null);
-    try {
+      let bookId = item.id;
+      if (bookId == null) {
+        const book = await apiClient.registerBook({
+          title: item.title,
+          author: item.author ?? undefined,
+          publisher: item.publisher ?? undefined,
+          isbn: item.isbn ?? undefined,
+          coverImageUrl: item.coverImageUrl ?? undefined,
+        });
+        bookId = book.id;
+      }
       await apiClient.startReadingRecord({ bookId });
       setMessage("읽기 시작으로 등록했어요. '독서 기록'에서 확인하세요.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했습니다.");
+    } finally {
+      setStartingKey(null);
     }
   }
 
@@ -96,7 +95,7 @@ export default function BooksPage() {
         ← 홈
       </Link>
 
-      <h1 className="mt-3 text-[28px] font-bold leading-tight tracking-tight text-ink">책 등록</h1>
+      <h1 className="mt-3 text-[28px] font-bold leading-tight tracking-tight text-ink">책 검색</h1>
       <p className="mt-1 text-sm font-bold text-muted">읽은 책이 하나의 서재가 되다</p>
 
       {/* 카카오 통합검색 */}
@@ -144,7 +143,7 @@ export default function BooksPage() {
         )}
         {results.map((item) => (
           <div
-            key={`${item.source}-${item.id ?? item.isbn ?? item.title}`}
+            key={itemKey(item)}
             className="flex items-center gap-3 rounded-card border-bold border-line bg-paper-pure p-3.5"
           >
             <BookCover title={item.title} coverImageUrl={item.coverImageUrl} />
@@ -161,27 +160,15 @@ export default function BooksPage() {
               </p>
             </div>
 
-            {item.id != null ? (
-              <PillButton
-                variant="outline"
-                size="sm"
-                fullWidth={false}
-                className="shrink-0"
-                onClick={() => handleStartReading(item.id!)}
-              >
-                읽기 시작
-              </PillButton>
-            ) : (
-              <PillButton
-                size="sm"
-                fullWidth={false}
-                className="shrink-0"
-                disabled={registeringIsbn === item.isbn}
-                onClick={() => handleRegisterFromSearch(item)}
-              >
-                {registeringIsbn === item.isbn ? "등록 중" : "등록"}
-              </PillButton>
-            )}
+            <PillButton
+              size="sm"
+              fullWidth={false}
+              className="shrink-0"
+              disabled={startingKey === itemKey(item)}
+              onClick={() => handleStartReading(item)}
+            >
+              {startingKey === itemKey(item) ? "시작 중" : "읽기 시작"}
+            </PillButton>
           </div>
         ))}
       </div>
