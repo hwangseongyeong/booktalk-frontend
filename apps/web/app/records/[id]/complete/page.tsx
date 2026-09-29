@@ -73,10 +73,15 @@ export default function CompleteReadingPage() {
 
   const keywords = useMemo(() => (showMore ? [...KEYWORDS, ...MORE_KEYWORDS] : KEYWORDS), [showMore]);
 
+  // My Words는 최대 3개까지만 선택할 수 있다.
+  const MAX_KEYWORDS = 3;
+
   function toggleKeyword(word: string) {
-    setSelectedKeywords((prev) =>
-      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
-    );
+    setSelectedKeywords((prev) => {
+      if (prev.includes(word)) return prev.filter((w) => w !== word);
+      if (prev.length >= MAX_KEYWORDS) return prev;
+      return [...prev, word];
+    });
   }
 
   async function handleSubmit() {
@@ -204,16 +209,26 @@ export default function CompleteReadingPage() {
           <div className="mt-6 flex items-center">
             <Bullet />
             <span className="text-sm font-medium text-gray-900">My Words</span>
+            <span className="ml-2 text-xs text-gray-400">
+              {selectedKeywords.length}/{MAX_KEYWORDS}
+            </span>
           </div>
           <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2">
             {keywords.map((word) => {
               const active = selectedKeywords.includes(word);
+              const reachedMax = selectedKeywords.length >= MAX_KEYWORDS;
+              const disabled = !active && reachedMax;
               return (
                 <button
                   key={word}
                   onClick={() => toggleKeyword(word)}
+                  disabled={disabled}
                   className={`text-sm transition-colors ${
-                    active ? "font-bold text-emerald-700" : "text-emerald-600/80 hover:text-emerald-700"
+                    active
+                      ? "font-bold text-emerald-700"
+                      : disabled
+                        ? "cursor-not-allowed text-gray-300"
+                        : "text-emerald-600/80 hover:text-emerald-700"
                   }`}
                 >
                   {word}
