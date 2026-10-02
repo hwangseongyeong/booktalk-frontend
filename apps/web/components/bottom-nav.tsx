@@ -29,7 +29,7 @@ const ITEMS: NavItem[] = [
   { label: "홈", Icon: NavHomeIcon, href: "/", match: ["/"] },
   { label: "책장", Icon: NavShelfIcon, href: "/shelf", match: ["/shelf"] },
   { label: "북박스", Icon: NavRecordIcon, href: "/bookbox", match: ["/bookbox", "/books"] },
-  { label: "소통", Icon: NavChatIcon, href: null },
+  { label: "소통", Icon: NavChatIcon, href: "/community", match: ["/community"] },
   { label: "마이", Icon: NavMyIcon, href: "/my", match: ["/my"] },
 ];
 
