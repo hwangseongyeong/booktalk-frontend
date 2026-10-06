@@ -343,6 +343,13 @@ export const apiClient = {
   joinByInvite: (token: string) =>
     request<Meeting>(`/meetings/invite/${encodeURIComponent(token)}/join`, { method: "POST" }),
 
+  /** 공개 범위 변경(생성자) */
+  changeMeetingVisibility: (id: number, visibility: MeetingVisibility) =>
+    request<MeetingDetail>(`/meetings/${id}/visibility`, {
+      method: "PATCH",
+      body: JSON.stringify({ visibility }),
+    }),
+
   /** 초대 링크 재발급(생성자). 기존 링크는 무효화됨 */
   reissueInviteToken: (id: number) =>
     request<MeetingDetail>(`/meetings/${id}/invite/reissue`, { method: "POST" }),

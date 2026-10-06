@@ -117,6 +117,27 @@ export default function MeetingDetailPage() {
     }
   }
 
+  // 공개 범위 전환(생성자). 비공개로 바꾸면 목록에서 숨겨진다.
+  async function handleToggleVisibility() {
+    if (!meeting || action) return;
+    const next = meeting.visibility === "PRIVATE" ? "PUBLIC" : "PRIVATE";
+    const confirmMsg =
+      next === "PRIVATE"
+        ? "비공개로 전환할까요? 목록에서 숨겨지고 초대 링크로만 참여할 수 있어요."
+        : "공개로 전환할까요? 목록에 노출되고 누구나 참여할 수 있어요.";
+    if (!window.confirm(confirmMsg)) return;
+    setAction("visibility");
+    setActionError(null);
+    try {
+      const refreshed = await apiClient.changeMeetingVisibility(meeting.id, next);
+      setMeeting(refreshed);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "공개 범위 변경에 실패했어요.");
+    } finally {
+      setAction(null);
+    }
+  }
+
   // 초대 링크 재발급(생성자). 기존 링크를 무효화하고 상세를 갱신한다.
   async function handleReissue() {
     if (!meeting || action) return;
@@ -240,13 +261,26 @@ export default function MeetingDetailPage() {
                 >
                   {action === "close" ? "종료 중..." : "모임 종료"}
                 </button>
-                <button
-                  onClick={handleReissue}
-                  disabled={action !== null}
-                  className="py-1 text-xs font-medium text-gray-400 underline underline-offset-2 transition-colors hover:text-gray-600 disabled:opacity-40"
-                >
-                  {action === "reissue" ? "재발급 중..." : "초대 링크 재발급"}
-                </button>
+                <div className="flex items-center justify-center gap-4 pt-1">
+                  <button
+                    onClick={handleToggleVisibility}
+                    disabled={action !== null}
+                    className="text-xs font-medium text-gray-400 underline underline-offset-2 transition-colors hover:text-gray-600 disabled:opacity-40"
+                  >
+                    {action === "visibility"
+                      ? "변경 중..."
+                      : meeting.visibility === "PRIVATE"
+                        ? "공개로 전환"
+                        : "비공개로 전환"}
+                  </button>
+                  <button
+                    onClick={handleReissue}
+                    disabled={action !== null}
+                    className="text-xs font-medium text-gray-400 underline underline-offset-2 transition-colors hover:text-gray-600 disabled:opacity-40"
+                  >
+                    {action === "reissue" ? "재발급 중..." : "초대 링크 재발급"}
+                  </button>
+                </div>
               </div>
             ) : meeting.joined ? (
               <button
