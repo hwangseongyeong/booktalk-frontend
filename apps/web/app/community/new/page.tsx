@@ -6,7 +6,6 @@ import {
   apiClient,
   type BookSearchResult,
   type ReadingMode,
-  type MeetingRole,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../lib/useRequireAuth";
 import { BellIcon } from "../../../components/icons";
@@ -18,11 +17,6 @@ const MODES: { mode: ReadingMode; emoji: string; desc: string }[] = [
   { mode: "SOLO", emoji: "👭", desc: "자유롭게 각자" },
 ];
 
-const ROLES: { role: MeetingRole; label: string }[] = [
-  { role: "LEADER", label: "리더" },
-  { role: "MEMBER", label: "멤버" },
-];
-
 export default function CreateMeetingPage() {
   const ready = useRequireAuth();
   const router = useRouter();
@@ -30,7 +24,6 @@ export default function CreateMeetingPage() {
   const [mode, setMode] = useState<ReadingMode>("TOGETHER");
   const [book, setBook] = useState<BookSearchResult | null>(null);
   const [name, setName] = useState("");
-  const [role, setRole] = useState<MeetingRole>("LEADER");
 
   // 책 선택 패널
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -89,7 +82,6 @@ export default function CreateMeetingPage() {
         readingMode: mode,
         bookId,
         name: name.trim(),
-        role,
       });
       router.push("/community");
     } catch (err) {
@@ -223,27 +215,6 @@ export default function CreateMeetingPage() {
           placeholder="예: 소년이 온다 함께 읽기"
           className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base outline-none placeholder:text-gray-400 focus:border-gray-900"
         />
-      </section>
-
-      {/* 역할 */}
-      <section className="mt-7">
-        <h2 className="text-base font-bold text-gray-900">역할</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {ROLES.map(({ role: r, label }) => {
-            const active = role === r;
-            return (
-              <button
-                key={r}
-                onClick={() => setRole(r)}
-                className={`rounded-2xl border-2 py-5 text-base font-bold transition-colors ${
-                  active ? "border-gray-900 bg-white text-gray-900" : "border-gray-200 bg-gray-50 text-gray-500"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       {/* 하단 고정 버튼 */}

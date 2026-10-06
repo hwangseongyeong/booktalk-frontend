@@ -66,8 +66,6 @@ export type MonthlyShelf = {
 export type ReadingMode = "TOGETHER" | "SOLO";
 /** 모집 중 / 진행 중 / 종료 */
 export type MeetingStatus = "RECRUITING" | "ONGOING" | "CLOSED";
-/** 모임 내 역할 */
-export type MeetingRole = "LEADER" | "MEMBER";
 
 export type Meeting = {
   id: number;
@@ -80,8 +78,10 @@ export type Meeting = {
   dday: number | null;
   recruitDeadline: string | null;
   book: Book;
-  /** 현재 로그인 사용자의 역할. 참여하지 않았으면 null */
-  myRole: MeetingRole | null;
+  /** 현재 로그인 사용자가 이 모임의 생성자인지(종료/시작 권한) */
+  isHost: boolean;
+  /** 현재 로그인 사용자가 참여 중인지 */
+  joined: boolean;
   createdAt: string;
 };
 
@@ -90,7 +90,6 @@ export type MeetingMember = {
   nickname: string;
   profileImageUrl: string | null;
   profileColor: string | null;
-  role: MeetingRole;
   joinedAt: string;
 };
 
@@ -102,8 +101,6 @@ export type CreateMeetingPayload = {
   readingMode: ReadingMode;
   bookId: number;
   name: string;
-  /** 생성자 역할. 생략 시 LEADER */
-  role?: MeetingRole;
   /** 생략 시 서버 기본 정원 */
   capacity?: number;
   /** YYYY-MM-DD. 생략 시 서버 기본 모집기간 */
@@ -336,4 +333,8 @@ export const apiClient = {
   /** 모집 → 진행 중 전환(리더) */
   startMeeting: (id: number) =>
     request<Meeting>(`/meetings/${id}/start`, { method: "POST" }),
+
+  /** 모임 종료(리더) */
+  closeMeeting: (id: number) =>
+    request<Meeting>(`/meetings/${id}/close`, { method: "POST" }),
 };

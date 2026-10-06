@@ -21,7 +21,10 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 /** 상단 '참여 중인 모임' 가로 스크롤 카드 */
 function JoinedCard({ meeting }: { meeting: Meeting }) {
   return (
-    <div className="w-40 shrink-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <Link
+      href={`/community/${meeting.id}`}
+      className="block w-40 shrink-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+    >
       <ReadingModeBadge mode={meeting.readingMode} />
       <MeetingCover
         title={meeting.book.title}
@@ -30,14 +33,17 @@ function JoinedCard({ meeting }: { meeting: Meeting }) {
         className="mt-3 h-20 w-14"
       />
       <p className="mt-3 truncate text-sm font-bold text-gray-900">{meeting.name}</p>
-    </div>
+    </Link>
   );
 }
 
 /** 목록 카드 */
 function MeetingListCard({ meeting }: { meeting: Meeting }) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <Link
+      href={`/community/${meeting.id}`}
+      className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+    >
       <MeetingCover
         title={meeting.book.title}
         coverImageUrl={meeting.book.coverImageUrl ?? meeting.book.spineImageUrl}
@@ -58,7 +64,7 @@ function MeetingListCard({ meeting }: { meeting: Meeting }) {
           {meeting.currentMemberCount}/{meeting.capacity}명 참여 중
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 
