@@ -10,8 +10,13 @@
  * 플랫폼 > Web 사이트 도메인에 서비스 도메인 등록이 필요하다.
  */
 
-// 카카오 JS SDK v2 (https://developers.kakao.com/docs/latest/ko/kakao-login/js)
-const SDK_URL = "https://t1.kakao.com/kakao_js_sdk/2.7.4/kakao.min.js";
+// 카카오 JS SDK v2 (Kakao.Share). 특정 버전이 404여도 되도록 여러 버전을 순서대로 시도한다.
+// (https://developers.kakao.com/docs/latest/ko/kakao-login/js)
+const SDK_URLS = [
+  "https://t1.kakao.com/kakao_js_sdk/2.7.4/kakao.min.js",
+  "https://t1.kakao.com/kakao_js_sdk/2.7.2/kakao.min.js",
+  "https://t1.kakao.com/kakao_js_sdk/2.6.0/kakao.min.js",
+];
 
 declare global {
   interface Window {
@@ -35,6 +40,21 @@ export function isKakaoShareConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
 }
 
+function loadScript(src: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    // integrity/crossorigin 없이 평범한 스크립트로 불러온다(CORS 요구 제거해 로드 실패 가능성 최소화).
+    script.onload = () => resolve();
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`로드 실패: ${src}`));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 function loadSdk(): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("브라우저에서만 공유할 수 있어요."));
@@ -42,18 +62,20 @@ function loadSdk(): Promise<void> {
   if (window.Kakao) return Promise.resolve();
   if (loadPromise) return loadPromise;
 
-  loadPromise = new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = SDK_URL;
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    script.onload = () => resolve();
-    script.onerror = () => {
-      loadPromise = null;
-      reject(new Error("카카오 SDK를 불러오지 못했어요."));
-    };
-    document.head.appendChild(script);
-  });
+  loadPromise = (async () => {
+    for (const url of SDK_URLS) {
+      try {
+        await loadScript(url);
+        if (window.Kakao) return;
+      } catch {
+        // 다음 후보 URL로 재시도
+      }
+    }
+    loadPromise = null;
+    throw new Error(
+      "카카오 SDK를 불러오지 못했어요. 광고/추적 차단 확장 프로그램이나 네트워크 차단을 확인해 주세요.",
+    );
+  })();
   return loadPromise;
 }
 
