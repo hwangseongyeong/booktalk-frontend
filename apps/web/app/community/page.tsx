@@ -1,18 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiClient, type Meeting, type MeetingStatus } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
+import { formatDday } from "../../lib/meetings";
 import { BottomNav } from "../../components/bottom-nav";
 import { BellIcon, PlusIcon } from "../../components/icons";
 import { ReadingModeBadge, MeetingCover } from "../../components/community";
-import {
-  MOCK_JOINED,
-  MOCK_MEETINGS,
-  type Meeting,
-  type MeetingStatus,
-} from "../../lib/meetings";
 
 type FilterKey = "RECRUITING" | "ONGOING" | "ALL";
 
@@ -22,23 +18,18 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "ALL", label: "전체" },
 ];
 
-function matchesFilter(meeting: Meeting, filter: FilterKey): boolean {
-  if (filter === "ALL") return true;
-  return meeting.status === (filter as MeetingStatus);
-}
-
 /** 상단 '참여 중인 모임' 가로 스크롤 카드 */
 function JoinedCard({ meeting }: { meeting: Meeting }) {
   return (
     <div className="w-40 shrink-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <ReadingModeBadge mode={meeting.mode} />
+      <ReadingModeBadge mode={meeting.readingMode} />
       <MeetingCover
-        title={meeting.bookTitle}
-        coverImageUrl={meeting.coverImageUrl}
-        primaryColor={meeting.primaryColor}
+        title={meeting.book.title}
+        coverImageUrl={meeting.book.coverImageUrl ?? meeting.book.spineImageUrl}
+        primaryColor={meeting.book.primaryColor}
         className="mt-3 h-20 w-14"
       />
-      <p className="mt-3 truncate text-sm font-bold text-gray-900">{meeting.title}</p>
+      <p className="mt-3 truncate text-sm font-bold text-gray-900">{meeting.name}</p>
     </div>
   );
 }
@@ -48,25 +39,23 @@ function MeetingListCard({ meeting }: { meeting: Meeting }) {
   return (
     <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <MeetingCover
-        title={meeting.bookTitle}
-        coverImageUrl={meeting.coverImageUrl}
-        primaryColor={meeting.primaryColor}
+        title={meeting.book.title}
+        coverImageUrl={meeting.book.coverImageUrl ?? meeting.book.spineImageUrl}
+        primaryColor={meeting.book.primaryColor}
         className="h-20 w-14"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <ReadingModeBadge mode={meeting.mode} />
-          <span className="shrink-0 text-sm font-bold text-gray-900">
-            {meeting.dday > 0 ? `D-${meeting.dday}` : "D-DAY"}
-          </span>
+          <ReadingModeBadge mode={meeting.readingMode} />
+          <span className="shrink-0 text-sm font-bold text-gray-900">{formatDday(meeting.dday)}</span>
         </div>
-        <p className="mt-1.5 truncate text-base font-bold text-gray-900">{meeting.title}</p>
+        <p className="mt-1.5 truncate text-base font-bold text-gray-900">{meeting.name}</p>
         <p className="mt-0.5 truncate text-sm text-gray-400">
-          {meeting.bookTitle}
-          {meeting.bookAuthor ? ` • ${meeting.bookAuthor}` : ""}
+          {meeting.book.title}
+          {meeting.book.author ? ` • ${meeting.book.author}` : ""}
         </p>
         <p className="mt-1 text-xs text-gray-400">
-          {meeting.current}/{meeting.capacity}명 참여 중
+          {meeting.currentMemberCount}/{meeting.capacity}명 참여 중
         </p>
       </div>
     </div>
@@ -77,11 +66,40 @@ export default function CommunityPage() {
   const ready = useRequireAuth();
   const router = useRouter();
   const [filter, setFilter] = useState<FilterKey>("RECRUITING");
+  const [joined, setJoined] = useState<Meeting[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const meetings = useMemo(
-    () => MOCK_MEETINGS.filter((m) => matchesFilter(m, filter)),
-    [filter],
-  );
+  // 참여 중인 모임은 필터와 무관하므로 최초 1회만 불러온다.
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    apiClient.getJoinedMeetings().then(
+      (list) => { if (!cancelled) setJoined(list); },
+      () => {},
+    );
+    return () => { cancelled = true; };
+  }, [ready]);
+
+  // 목록은 필터가 바뀔 때마다 다시 불러온다.
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    const status: MeetingStatus | undefined = filter === "ALL" ? undefined : filter;
+    apiClient
+      .getMeetings(status)
+      .then((list) => { if (!cancelled) setMeetings(list); })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "모임을 불러오지 못했어요.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [ready, filter]);
 
   if (!ready) return null;
 
@@ -105,11 +123,11 @@ export default function CommunityPage() {
       {/* 참여 중인 모임 */}
       <section className="mt-7">
         <h2 className="text-lg font-bold text-gray-900">참여 중인 모임</h2>
-        {MOCK_JOINED.length === 0 ? (
+        {joined.length === 0 ? (
           <p className="mt-3 text-sm text-gray-400">아직 참여 중인 모임이 없어요.</p>
         ) : (
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-            {MOCK_JOINED.map((m) => (
+            {joined.map((m) => (
               <JoinedCard key={m.id} meeting={m} />
             ))}
           </div>
@@ -138,7 +156,11 @@ export default function CommunityPage() {
 
       {/* 모임 목록 */}
       <section className="mt-5 flex flex-col gap-4">
-        {meetings.length === 0 ? (
+        {loading ? (
+          <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
+        ) : error ? (
+          <p className="py-10 text-center text-sm text-red-600">{error}</p>
+        ) : meetings.length === 0 ? (
           <p className="py-10 text-center text-sm text-gray-400">해당하는 모임이 없어요.</p>
         ) : (
           meetings.map((m) => <MeetingListCard key={m.id} meeting={m} />)

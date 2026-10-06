@@ -5,7 +5,8 @@
  * - ReadingModeBadge: 함께 읽기(파랑) / 각자 읽기(노랑) 알약 배지
  * - MeetingCover: 책 표지. 표지 URL이 없으면 primaryColor + 제목 폴백
  */
-import { READING_MODE_LABEL, type ReadingMode } from "../lib/meetings";
+import type { ReadingMode } from "@booktalk/api-client";
+import { READING_MODE_LABEL } from "../lib/meetings";
 
 const MODE_BADGE: Record<ReadingMode, string> = {
   TOGETHER: "bg-sky-100 text-sky-700",

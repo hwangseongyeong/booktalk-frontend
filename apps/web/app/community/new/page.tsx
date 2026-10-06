@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, type BookSearchResult } from "@booktalk/api-client";
+import {
+  apiClient,
+  type BookSearchResult,
+  type ReadingMode,
+  type MeetingRole,
+} from "@booktalk/api-client";
 import { useRequireAuth } from "../../../lib/useRequireAuth";
 import { BellIcon } from "../../../components/icons";
 import { MeetingCover } from "../../../components/community";
-import {
-  READING_MODE_LABEL,
-  type ReadingMode,
-  type MeetingRole,
-} from "../../../lib/meetings";
+import { READING_MODE_LABEL } from "../../../lib/meetings";
 
 const MODES: { mode: ReadingMode; emoji: string; desc: string }[] = [
   { mode: "TOGETHER", emoji: "📖", desc: "한 책을 같이" },
@@ -39,6 +40,7 @@ export default function CreateMeetingPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!ready) return null;
 
@@ -65,12 +67,35 @@ export default function CreateMeetingPage() {
     if (!name.trim()) setName(`${item.title} ${READING_MODE_LABEL[mode]}`);
   }
 
-  function handleSubmit() {
-    if (!canSubmit) return;
+  async function handleSubmit() {
+    if (!book || name.trim().length === 0 || submitting) return;
     setSubmitting(true);
-    // NOTE: 모임 생성 API가 아직 없어 생성 성공으로 간주하고 소통 목록으로 돌아간다.
-    // 백엔드 스펙이 나오면 apiClient.createMeeting(...) 호출로 교체한다.
-    router.push("/community");
+    setSubmitError(null);
+    try {
+      // 카카오 검색 결과(id 없음)는 모임 생성 전에 먼저 로컬에 등록한다.
+      let bookId = book.id;
+      if (bookId == null) {
+        const registered = await apiClient.registerBook({
+          title: book.title,
+          author: book.author ?? undefined,
+          publisher: book.publisher ?? undefined,
+          isbn: book.isbn ?? undefined,
+          coverImageUrl: book.coverImageUrl ?? undefined,
+        });
+        bookId = registered.id;
+      }
+
+      await apiClient.createMeeting({
+        readingMode: mode,
+        bookId,
+        name: name.trim(),
+        role,
+      });
+      router.push("/community");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "모임 생성에 실패했어요.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -223,12 +248,13 @@ export default function CreateMeetingPage() {
 
       {/* 하단 고정 버튼 */}
       <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-6 pb-6 pt-3">
+        {submitError && <p className="mb-2 text-center text-sm text-red-600">{submitError}</p>}
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
           className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
         >
-          모임 만들기
+          {submitting ? "만드는 중..." : "모임 만들기"}
         </button>
       </div>
     </main>

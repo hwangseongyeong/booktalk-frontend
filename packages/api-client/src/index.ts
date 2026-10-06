@@ -61,6 +61,55 @@ export type MonthlyShelf = {
   books: ShelfBookItem[];
 };
 
+// ---------- 모임(소통) 타입 ----------
+/** 함께 읽기 / 각자 읽기 */
+export type ReadingMode = "TOGETHER" | "SOLO";
+/** 모집 중 / 진행 중 / 종료 */
+export type MeetingStatus = "RECRUITING" | "ONGOING" | "CLOSED";
+/** 모임 내 역할 */
+export type MeetingRole = "LEADER" | "MEMBER";
+
+export type Meeting = {
+  id: number;
+  name: string;
+  readingMode: ReadingMode;
+  status: MeetingStatus;
+  capacity: number;
+  currentMemberCount: number;
+  /** 모집 마감까지 남은 일수(양수=남음, 0=오늘, 음수=지남, null=미설정) */
+  dday: number | null;
+  recruitDeadline: string | null;
+  book: Book;
+  /** 현재 로그인 사용자의 역할. 참여하지 않았으면 null */
+  myRole: MeetingRole | null;
+  createdAt: string;
+};
+
+export type MeetingMember = {
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
+  profileColor: string | null;
+  role: MeetingRole;
+  joinedAt: string;
+};
+
+export type MeetingDetail = Meeting & {
+  members: MeetingMember[];
+};
+
+export type CreateMeetingPayload = {
+  readingMode: ReadingMode;
+  bookId: number;
+  name: string;
+  /** 생성자 역할. 생략 시 LEADER */
+  role?: MeetingRole;
+  /** 생략 시 서버 기본 정원 */
+  capacity?: number;
+  /** YYYY-MM-DD. 생략 시 서버 기본 모집기간 */
+  recruitDeadline?: string;
+};
+
 // ---------- 인증 타입 ----------
 export type OAuthProviderKey = "kakao" | "naver" | "google" | "facebook";
 
@@ -260,4 +309,31 @@ export const apiClient = {
   // ---------- 서재 ----------
   getMonthlyShelf: (yearMonth?: string) =>
     request<MonthlyShelf>(`/shelves/monthly${yearMonth ? `?yearMonth=${yearMonth}` : ""}`),
+
+  // ---------- 모임(소통) ----------
+  /** 전체 모임 목록. status=RECRUITING|ONGOING|CLOSED, 생략 시 전체 */
+  getMeetings: (status?: MeetingStatus) =>
+    request<Meeting[]>(`/meetings${status ? `?status=${status}` : ""}`),
+
+  /** 내가 참여 중인 모임 목록 */
+  getJoinedMeetings: () => request<Meeting[]>("/meetings/joined"),
+
+  /** 모임 상세(참여자 포함) */
+  getMeeting: (id: number) => request<MeetingDetail>(`/meetings/${id}`),
+
+  createMeeting: (payload: CreateMeetingPayload) =>
+    request<Meeting>("/meetings", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  joinMeeting: (id: number) =>
+    request<Meeting>(`/meetings/${id}/join`, { method: "POST" }),
+
+  leaveMeeting: (id: number) =>
+    request<void>(`/meetings/${id}/leave`, { method: "DELETE" }),
+
+  /** 모집 → 진행 중 전환(리더) */
+  startMeeting: (id: number) =>
+    request<Meeting>(`/meetings/${id}/start`, { method: "POST" }),
 };
