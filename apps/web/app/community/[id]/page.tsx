@@ -6,6 +6,7 @@ import { apiClient, type MeetingDetail, type MeetingMember } from "@booktalk/api
 import { useRequireAuth } from "../../../lib/useRequireAuth";
 import { formatDday, MEETING_STATUS_LABEL } from "../../../lib/meetings";
 import { ReadingModeBadge, MeetingCover } from "../../../components/community";
+import { shareMeetingToKakao } from "../../../lib/kakao";
 
 /** 참여자 한 명 (프로필 이미지 또는 색상 + 닉네임 이니셜 폴백) */
 function MemberRow({ member }: { member: MeetingMember }) {
@@ -93,6 +94,25 @@ export default function MeetingDetailPage() {
     }
   }
 
+  // 카카오톡으로 모임 초대 링크를 공유한다(참여 페이지 = 현재 모임 상세 URL).
+  async function handleInvite() {
+    if (!meeting || action) return;
+    setAction("invite");
+    setActionError(null);
+    try {
+      await shareMeetingToKakao({
+        url: `${window.location.origin}/community/${meeting.id}`,
+        meetingName: meeting.name,
+        bookTitle: meeting.book.title,
+        coverImageUrl: meeting.book.coverImageUrl,
+      });
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "초대 공유에 실패했어요.");
+    } finally {
+      setAction(null);
+    }
+  }
+
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-28 pt-8">
       <header className="flex items-center">
@@ -157,6 +177,18 @@ export default function MeetingDetailPage() {
           <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-6 pb-6 pt-3">
             {actionError && (
               <p className="mb-2 text-center text-sm text-red-600">{actionError}</p>
+            )}
+
+            {/* 초대: 참여 중인 사람(생성자 포함)이 모집/진행 중 모임에 친구를 부른다 */}
+            {meeting.status !== "CLOSED" && (meeting.isHost || meeting.joined) && (
+              <button
+                onClick={handleInvite}
+                disabled={action !== null}
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] py-4 text-base font-bold text-[#191600] transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                <span aria-hidden>💬</span>
+                {action === "invite" ? "카카오톡 여는 중..." : "카카오톡으로 초대"}
+              </button>
             )}
 
             {meeting.status === "CLOSED" ? (
