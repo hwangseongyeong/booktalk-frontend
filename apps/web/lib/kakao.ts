@@ -12,14 +12,13 @@
 
 // 카카오 JS SDK v2 (Kakao.Share). 순서대로 시도한다.
 // 1순위는 같은 출처 프록시(/assets/bt-client.js, next.config rewrites) — 경로에 kakao/sdk 키워드가
-//   없어 광고/추적 차단기(도메인·경로 키워드 기반, ERR_BLOCKED_BY_CLIENT)를 우회한다.
-// 이후는 kakao CDN 직접 로드(버전 404 대비 여러 버전).
-// (https://developers.kakao.com/docs/latest/ko/kakao-login/js)
+//   없어 광고/추적 차단기(도메인·경로 키워드 기반)를 우회한다.
+// 이후는 kakao CDN 직접 로드(버전 폴백). 호스트는 t1.kakaocdn.net (t1.kakao.com 아님).
+// (https://developers.kakao.com/docs/latest/ko/javascript/download)
 const SDK_URLS = [
   "/assets/bt-client.js",
-  "https://t1.kakao.com/kakao_js_sdk/2.7.4/kakao.min.js",
-  "https://t1.kakao.com/kakao_js_sdk/2.7.2/kakao.min.js",
-  "https://t1.kakao.com/kakao_js_sdk/2.6.0/kakao.min.js",
+  "https://t1.kakaocdn.net/kakao_js_sdk/2.7.9/kakao.min.js",
+  "https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js",
 ];
 
 declare global {

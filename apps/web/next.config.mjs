@@ -7,7 +7,7 @@ const nextConfig = {
       // 도메인뿐 아니라 URL 경로 키워드로도 차단(ERR_BLOCKED_BY_CLIENT)하기 때문.
       {
         source: "/assets/bt-client.js",
-        destination: "https://t1.kakao.com/kakao_js_sdk/2.7.4/kakao.min.js",
+        destination: "https://t1.kakaocdn.net/kakao_js_sdk/2.7.9/kakao.min.js",
       },
     ];
   },
