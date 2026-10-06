@@ -10,9 +10,13 @@
  * 플랫폼 > Web 사이트 도메인에 서비스 도메인 등록이 필요하다.
  */
 
-// 카카오 JS SDK v2 (Kakao.Share). 특정 버전이 404여도 되도록 여러 버전을 순서대로 시도한다.
+// 카카오 JS SDK v2 (Kakao.Share). 순서대로 시도한다.
+// 1순위는 같은 출처 프록시(/vendor/kakao-sdk.js, next.config rewrites) — 광고/추적 차단기의
+//   도메인 기반 차단(ERR_BLOCKED_BY_CLIENT)을 우회한다.
+// 이후는 kakao CDN 직접 로드(버전 404 대비 여러 버전).
 // (https://developers.kakao.com/docs/latest/ko/kakao-login/js)
 const SDK_URLS = [
+  "/vendor/kakao-sdk.js",
   "https://t1.kakao.com/kakao_js_sdk/2.7.4/kakao.min.js",
   "https://t1.kakao.com/kakao_js_sdk/2.7.2/kakao.min.js",
   "https://t1.kakao.com/kakao_js_sdk/2.6.0/kakao.min.js",
