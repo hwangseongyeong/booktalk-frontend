@@ -66,12 +66,15 @@ export type MonthlyShelf = {
 export type ReadingMode = "TOGETHER" | "SOLO";
 /** 모집 중 / 진행 중 / 종료 */
 export type MeetingStatus = "RECRUITING" | "ONGOING" | "CLOSED";
+/** 공개(목록 노출+직접 참여) / 비공개(목록 숨김+초대 토큰으로만 참여) */
+export type MeetingVisibility = "PUBLIC" | "PRIVATE";
 
 export type Meeting = {
   id: number;
   name: string;
   readingMode: ReadingMode;
   status: MeetingStatus;
+  visibility: MeetingVisibility;
   capacity: number;
   currentMemberCount: number;
   /** 모집 마감까지 남은 일수(양수=남음, 0=오늘, 음수=지남, null=미설정) */
@@ -103,6 +106,8 @@ export type CreateMeetingPayload = {
   readingMode: ReadingMode;
   bookId: number;
   name: string;
+  /** 생략 시 PUBLIC(공개) */
+  visibility?: MeetingVisibility;
   /** 생략 시 서버 기본 정원 */
   capacity?: number;
   /** YYYY-MM-DD. 생략 시 서버 기본 모집기간 */
@@ -325,6 +330,10 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  /** 공개 모임 직접 참여(비공개 모임은 초대 토큰 필요) */
+  joinMeeting: (id: number) =>
+    request<Meeting>(`/meetings/${id}/join`, { method: "POST" }),
 
   /** 초대 토큰으로 모임 미리보기(참여 수락 화면용) */
   getMeetingByInvite: (token: string) =>

@@ -161,11 +161,16 @@ export default function MeetingDetailPage() {
               className="h-24 w-16"
             />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <ReadingModeBadge mode={meeting.readingMode} />
                 <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">
                   {MEETING_STATUS_LABEL[meeting.status]}
                 </span>
+                {meeting.visibility === "PRIVATE" && (
+                  <span className="rounded-full bg-gray-900 px-2.5 py-1 text-xs font-bold text-white">
+                    🔒 비공개
+                  </span>
+                )}
               </div>
               <h1 className="mt-2 text-lg font-bold text-gray-900">{meeting.name}</h1>
               <p className="mt-0.5 truncate text-sm text-gray-400">
@@ -256,10 +261,20 @@ export default function MeetingDetailPage() {
               >
                 {action === "leave" ? "처리 중..." : "모임 나가기"}
               </button>
-            ) : (
+            ) : meeting.visibility === "PRIVATE" ? (
               <p className="py-2 text-center text-sm text-gray-400">
                 초대 링크로만 참여할 수 있는 모임이에요.
               </p>
+            ) : meeting.currentMemberCount < meeting.capacity ? (
+              <button
+                onClick={() => run("join", () => apiClient.joinMeeting(meeting.id))}
+                disabled={action !== null}
+                className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
+              >
+                {action === "join" ? "참여 중..." : "모임 참여하기"}
+              </button>
+            ) : (
+              <p className="py-2 text-center text-sm text-gray-400">정원이 가득 찼어요.</p>
             )}
           </div>
         </>

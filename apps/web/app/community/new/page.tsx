@@ -6,6 +6,7 @@ import {
   apiClient,
   type BookSearchResult,
   type ReadingMode,
+  type MeetingVisibility,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../lib/useRequireAuth";
 import { BellIcon } from "../../../components/icons";
@@ -17,11 +18,17 @@ const MODES: { mode: ReadingMode; emoji: string; desc: string }[] = [
   { mode: "SOLO", emoji: "👭", desc: "자유롭게 각자" },
 ];
 
+const VISIBILITIES: { value: MeetingVisibility; emoji: string; label: string; desc: string }[] = [
+  { value: "PUBLIC", emoji: "🌐", label: "공개", desc: "목록에 노출, 누구나 참여" },
+  { value: "PRIVATE", emoji: "🔒", label: "비공개", desc: "초대 링크로만 참여" },
+];
+
 export default function CreateMeetingPage() {
   const ready = useRequireAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<ReadingMode>("TOGETHER");
+  const [visibility, setVisibility] = useState<MeetingVisibility>("PUBLIC");
   const [book, setBook] = useState<BookSearchResult | null>(null);
   const [name, setName] = useState("");
 
@@ -82,6 +89,7 @@ export default function CreateMeetingPage() {
         readingMode: mode,
         bookId,
         name: name.trim(),
+        visibility,
       });
       router.push("/community");
     } catch (err) {
@@ -123,6 +131,29 @@ export default function CreateMeetingPage() {
               >
                 <span className="text-2xl" aria-hidden>{emoji}</span>
                 <span className="text-base font-bold text-gray-900">{READING_MODE_LABEL[m]}</span>
+                <span className="text-xs text-gray-400">{desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 공개 범위 */}
+      <section className="mt-7">
+        <h2 className="text-base font-bold text-gray-900">공개 범위</h2>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {VISIBILITIES.map(({ value, emoji, label, desc }) => {
+            const active = visibility === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setVisibility(value)}
+                className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-7 transition-colors ${
+                  active ? "border-gray-900 bg-white" : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <span className="text-2xl" aria-hidden>{emoji}</span>
+                <span className="text-base font-bold text-gray-900">{label}</span>
                 <span className="text-xs text-gray-400">{desc}</span>
               </button>
             );
