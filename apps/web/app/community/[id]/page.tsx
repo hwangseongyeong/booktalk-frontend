@@ -94,20 +94,40 @@ export default function MeetingDetailPage() {
     }
   }
 
-  // 카카오톡으로 모임 초대 링크를 공유한다(참여 페이지 = 현재 모임 상세 URL).
+  // 카카오톡으로 비공개 초대 링크를 공유한다(토큰 링크로만 참여 가능).
   async function handleInvite() {
     if (!meeting || action) return;
+    if (!meeting.inviteToken) {
+      setActionError("초대 링크를 불러오지 못했어요.");
+      return;
+    }
     setAction("invite");
     setActionError(null);
     try {
       await shareMeetingToKakao({
-        url: `${window.location.origin}/community/${meeting.id}`,
+        url: `${window.location.origin}/community/invite/${meeting.inviteToken}`,
         meetingName: meeting.name,
         bookTitle: meeting.book.title,
         coverImageUrl: meeting.book.coverImageUrl,
       });
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "초대 공유에 실패했어요.");
+    } finally {
+      setAction(null);
+    }
+  }
+
+  // 초대 링크 재발급(생성자). 기존 링크를 무효화하고 상세를 갱신한다.
+  async function handleReissue() {
+    if (!meeting || action) return;
+    if (!window.confirm("초대 링크를 새로 발급할까요? 기존 링크는 더 이상 쓸 수 없어요.")) return;
+    setAction("reissue");
+    setActionError(null);
+    try {
+      const refreshed = await apiClient.reissueInviteToken(meeting.id);
+      setMeeting(refreshed);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "재발급에 실패했어요.");
     } finally {
       setAction(null);
     }
@@ -215,6 +235,13 @@ export default function MeetingDetailPage() {
                 >
                   {action === "close" ? "종료 중..." : "모임 종료"}
                 </button>
+                <button
+                  onClick={handleReissue}
+                  disabled={action !== null}
+                  className="py-1 text-xs font-medium text-gray-400 underline underline-offset-2 transition-colors hover:text-gray-600 disabled:opacity-40"
+                >
+                  {action === "reissue" ? "재발급 중..." : "초대 링크 재발급"}
+                </button>
               </div>
             ) : meeting.joined ? (
               <button
@@ -229,16 +256,10 @@ export default function MeetingDetailPage() {
               >
                 {action === "leave" ? "처리 중..." : "모임 나가기"}
               </button>
-            ) : meeting.currentMemberCount < meeting.capacity ? (
-              <button
-                onClick={() => run("join", () => apiClient.joinMeeting(meeting.id))}
-                disabled={action !== null}
-                className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
-              >
-                {action === "join" ? "참여 중..." : "모임 참여하기"}
-              </button>
             ) : (
-              <p className="py-2 text-center text-sm text-gray-400">정원이 가득 찼어요.</p>
+              <p className="py-2 text-center text-sm text-gray-400">
+                초대 링크로만 참여할 수 있는 모임이에요.
+              </p>
             )}
           </div>
         </>

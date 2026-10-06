@@ -95,6 +95,8 @@ export type MeetingMember = {
 
 export type MeetingDetail = Meeting & {
   members: MeetingMember[];
+  /** 비공개 초대 링크 토큰. 참여자(멤버)에게만 내려오고, 비참여자에게는 null */
+  inviteToken: string | null;
 };
 
 export type CreateMeetingPayload = {
@@ -324,17 +326,26 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
-  joinMeeting: (id: number) =>
-    request<Meeting>(`/meetings/${id}/join`, { method: "POST" }),
+  /** 초대 토큰으로 모임 미리보기(참여 수락 화면용) */
+  getMeetingByInvite: (token: string) =>
+    request<MeetingDetail>(`/meetings/invite/${encodeURIComponent(token)}`),
+
+  /** 초대 토큰으로 모임 참여(비공개: 토큰 링크로만 참여 가능) */
+  joinByInvite: (token: string) =>
+    request<Meeting>(`/meetings/invite/${encodeURIComponent(token)}/join`, { method: "POST" }),
+
+  /** 초대 링크 재발급(생성자). 기존 링크는 무효화됨 */
+  reissueInviteToken: (id: number) =>
+    request<MeetingDetail>(`/meetings/${id}/invite/reissue`, { method: "POST" }),
 
   leaveMeeting: (id: number) =>
     request<void>(`/meetings/${id}/leave`, { method: "DELETE" }),
 
-  /** 모집 → 진행 중 전환(리더) */
+  /** 모집 → 진행 중 전환(생성자) */
   startMeeting: (id: number) =>
     request<Meeting>(`/meetings/${id}/start`, { method: "POST" }),
 
-  /** 모임 종료(리더) */
+  /** 모임 종료(생성자) */
   closeMeeting: (id: number) =>
     request<Meeting>(`/meetings/${id}/close`, { method: "POST" }),
 };
