@@ -8,6 +8,7 @@ import {
   getSavedNaverState,
   type OAuthProviderKey,
 } from "../../../../lib/oauthProviders";
+import { takeReturnTo } from "../../../../lib/returnTo";
 
 const VALID_PROVIDERS: OAuthProviderKey[] = ["kakao", "naver", "google", "facebook"];
 
@@ -57,8 +58,12 @@ function CallbackInner() {
       })
       .then((tokens) => {
         authStorage.setTokens(tokens.accessToken, tokens.refreshToken);
-        // 온보딩(닉네임·프로필·친구초대) 미완료 사용자는 온보딩으로, 완료 사용자는 홈으로.
-        router.replace(tokens.user.onboardingCompleted ? "/" : "/onboarding/nickname");
+        // 온보딩 미완료 사용자는 온보딩으로. 완료 사용자는 저장된 복귀 경로(초대 링크 등)가 있으면 그곳으로, 없으면 홈으로.
+        if (!tokens.user.onboardingCompleted) {
+          router.replace("/onboarding/nickname");
+          return;
+        }
+        router.replace(takeReturnTo() ?? "/");
       })
       .catch((e) => {
         setError(e instanceof Error ? e.message : "로그인에 실패했습니다.");

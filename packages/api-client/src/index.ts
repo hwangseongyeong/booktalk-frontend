@@ -108,6 +108,8 @@ export type MeetingMember = {
 
 export type MeetingDetail = Meeting & {
   members: MeetingMember[];
+  /** 모임 생성자(모임장) 닉네임 */
+  hostNickname: string;
   /** 비공개 초대 링크 토큰. 참여자(멤버)에게만 내려오고, 비참여자에게는 null */
   inviteToken: string | null;
 };

@@ -76,7 +76,10 @@ export default function MeetingInvitePage() {
       ) : meeting ? (
         <>
           <p className="mt-8 text-center text-base font-medium text-gray-500">
-            독서 모임에 초대받았어요 📚
+            📚 독서 모임에 초대받았어요
+          </p>
+          <p className="mt-1 text-center text-sm text-gray-400">
+            <span className="font-bold text-gray-700">{meeting.hostNickname}</span>님의 모임이에요
           </p>
 
           <section className="mt-5 flex flex-col items-center rounded-3xl border border-gray-200 bg-white p-7 shadow-sm">
@@ -121,13 +124,22 @@ export default function MeetingInvitePage() {
             ) : full ? (
               <p className="py-2 text-center text-sm text-gray-400">정원이 가득 찼어요.</p>
             ) : (
-              <button
-                onClick={handleJoin}
-                disabled={joining}
-                className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
-              >
-                {joining ? "참여하는 중..." : "모임 참여하기"}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleJoin}
+                  disabled={joining}
+                  className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
+                >
+                  {joining ? "참여하는 중..." : "참여하기"}
+                </button>
+                <button
+                  onClick={() => router.push("/")}
+                  disabled={joining}
+                  className="w-full rounded-full py-3 text-sm font-medium text-gray-400 transition-colors hover:text-gray-600 disabled:opacity-40"
+                >
+                  다음에 할게요
+                </button>
+              </div>
             )}
           </div>
         </>
