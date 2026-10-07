@@ -42,12 +42,12 @@ export type ReadingRecord = {
   oneLineNote: string | null;
   /** 나의 단어(감정+분위기+장르) 평면 목록. 서재/홈/북박스 표시용 */
   myWords: string[];
-  /** 나의 단어 - 감정 */
-  emotion: string | null;
-  /** 나의 단어 - 분위기 */
-  mood: string | null;
-  /** 나의 단어 - 장르 */
-  genre: string | null;
+  /** 나의 단어 - 감정(최대 3) */
+  emotions: string[];
+  /** 나의 단어 - 분위기(최대 3) */
+  moods: string[];
+  /** 나의 단어 - 장르(최대 3) */
+  genres: string[];
   readAmount: ReadAmount | null;
 };
 
@@ -330,9 +330,9 @@ export const apiClient = {
       endDate?: string;
       rating?: number;
       oneLineNote?: string;
-      emotion?: string;
-      mood?: string;
-      genre?: string;
+      emotions?: string[];
+      moods?: string[];
+      genres?: string[];
       readAmount?: ReadAmount;
     }
   ) =>

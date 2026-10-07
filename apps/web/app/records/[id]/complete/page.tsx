@@ -30,39 +30,49 @@ function todayString() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-/** 한 카테고리의 단어 칩(단일 선택). */
+const MAX_PER_CATEGORY = 3;
+
+/** 한 카테고리의 단어 칩(최대 3개 다중 선택). */
 function WordSection({
   title,
   hint,
   options,
   selected,
-  onSelect,
+  onToggle,
 }: {
   title: string;
   hint: string;
   options: string[];
-  selected: string | null;
-  onSelect: (value: string | null) => void;
+  selected: string[];
+  onToggle: (value: string) => void;
 }) {
+  const reachedMax = selected.length >= MAX_PER_CATEGORY;
   return (
     <section className="mt-6">
       <h3 className="text-base font-bold text-gray-900">
         {title}
         <span className="text-gray-900">*</span>
         <span className="ml-2 text-xs font-normal text-gray-400">{hint}</span>
+        <span className="ml-2 text-xs font-normal text-gray-400">
+          {selected.length}/{MAX_PER_CATEGORY}
+        </span>
       </h3>
       <div className="mt-3 flex flex-wrap gap-2">
         {options.map((word) => {
-          const active = selected === word;
+          const active = selected.includes(word);
+          const disabled = !active && reachedMax;
           return (
             <button
               key={word}
               type="button"
-              onClick={() => onSelect(active ? null : word)}
+              onClick={() => onToggle(word)}
+              disabled={disabled}
               className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 active
                   ? "border-gray-900 bg-gray-900 text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  : disabled
+                    ? "cursor-not-allowed border-gray-200 bg-white text-gray-300"
+                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               {word}
@@ -88,10 +98,20 @@ export default function CompleteReadingPage() {
   const [endDate, setEndDate] = useState(todayString());
   const [readAmount, setReadAmount] = useState<ReadAmount>("ALL");
   const [rating, setRating] = useState(0);
-  const [emotion, setEmotion] = useState<string | null>(null);
-  const [mood, setMood] = useState<string | null>(null);
-  const [genre, setGenre] = useState<string | null>(null);
+  const [emotions, setEmotions] = useState<string[]>([]);
+  const [moods, setMoods] = useState<string[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
   const [oneLineNote, setOneLineNote] = useState("");
+
+  // 카테고리 토글(최대 3개). 이미 있으면 제거, 없고 3개 미만이면 추가.
+  function toggleFrom(setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    return (word: string) =>
+      setter((prev) => {
+        if (prev.includes(word)) return prev.filter((w) => w !== word);
+        if (prev.length >= MAX_PER_CATEGORY) return prev;
+        return [...prev, word];
+      });
+  }
 
   useEffect(() => {
     if (!ready) return;
@@ -118,7 +138,11 @@ export default function CompleteReadingPage() {
   }, [ready, recordId]);
 
   const canSubmit =
-    !!emotion && !!mood && !!genre && oneLineNote.trim().length > 0 && !submitting;
+    emotions.length > 0 &&
+    moods.length > 0 &&
+    genres.length > 0 &&
+    oneLineNote.trim().length > 0 &&
+    !submitting;
 
   async function handleSubmit() {
     if (!record || !canSubmit) return;
@@ -129,9 +153,9 @@ export default function CompleteReadingPage() {
         endDate,
         rating: rating > 0 ? rating : undefined,
         oneLineNote: oneLineNote.trim(),
-        emotion: emotion ?? undefined,
-        mood: mood ?? undefined,
-        genre: genre ?? undefined,
+        emotions,
+        moods,
+        genres,
         readAmount,
       });
       router.replace("/");
@@ -255,9 +279,9 @@ export default function CompleteReadingPage() {
           <h2 className="mt-6 text-2xl font-extrabold text-gray-900">
             나의 단어<span>*</span>
           </h2>
-          <WordSection title="감정" hint="어떤 감정이 남았나요?" options={EMOTIONS} selected={emotion} onSelect={setEmotion} />
-          <WordSection title="분위기" hint="책의 분위기는 어땠나요?" options={MOODS} selected={mood} onSelect={setMood} />
-          <WordSection title="장르" hint="어떤 책이었나요?" options={GENRES} selected={genre} onSelect={setGenre} />
+          <WordSection title="감정" hint="어떤 감정이 남았나요?" options={EMOTIONS} selected={emotions} onToggle={toggleFrom(setEmotions)} />
+          <WordSection title="분위기" hint="책의 분위기는 어땠나요?" options={MOODS} selected={moods} onToggle={toggleFrom(setMoods)} />
+          <WordSection title="장르" hint="어떤 책이었나요?" options={GENRES} selected={genres} onToggle={toggleFrom(setGenres)} />
 
           {/* 나의 한줄평 */}
           <h2 className="mt-7 text-xl font-extrabold text-gray-900">
