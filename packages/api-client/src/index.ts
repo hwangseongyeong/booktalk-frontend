@@ -29,6 +29,9 @@ export type BookSearchResult = {
 
 export type ReadingStatus = "READING" | "COMPLETED";
 
+/** 완독량: 전체 읽었어요 / 일부 읽었어요 */
+export type ReadAmount = "ALL" | "PARTIAL";
+
 export type ReadingRecord = {
   id: number;
   book: Book;
@@ -37,8 +40,15 @@ export type ReadingRecord = {
   endDate: string | null;
   rating: number | null;
   oneLineNote: string | null;
-  /** 완독 시 선택한 My Words 키워드(최대 3개) */
+  /** 나의 단어(감정+분위기+장르) 평면 목록. 서재/홈/북박스 표시용 */
   myWords: string[];
+  /** 나의 단어 - 감정 */
+  emotion: string | null;
+  /** 나의 단어 - 분위기 */
+  mood: string | null;
+  /** 나의 단어 - 장르 */
+  genre: string | null;
+  readAmount: ReadAmount | null;
 };
 
 export type ShelfBookItem = {
@@ -303,7 +313,15 @@ export const apiClient = {
 
   completeReadingRecord: (
     id: number,
-    payload: { endDate?: string; rating?: number; oneLineNote?: string; myWords?: string[] }
+    payload: {
+      endDate?: string;
+      rating?: number;
+      oneLineNote?: string;
+      emotion?: string;
+      mood?: string;
+      genre?: string;
+      readAmount?: ReadAmount;
+    }
   ) =>
     request<ReadingRecord>(`/reading-records/${id}/complete`, {
       method: "PATCH",

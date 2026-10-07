@@ -1,32 +1,77 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiClient, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, type ReadingRecord, type ReadAmount } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
+import { BellIcon } from "../../../../components/icons";
 
-// My Words 키워드. 백엔드에 별도 필드가 없어 선택값은 한줄평(oneLineNote)에 #태그로 합쳐 저장한다.
-const KEYWORDS = [
-  "매혹적인", "몰입되는", "따뜻한",
-  "생각하게 하는", "감동적인", "여운이 깊은",
-  "재치 있는", "강렬한", "흥미로운", "불편한",
+// 나의 단어 — 감정 / 분위기 / 장르에서 각각 하나씩 선택한다.
+const EMOTIONS = [
+  "감동적인", "따뜻한", "위로가 되는", "여운이 깊은",
+  "설레는", "벅찬", "쓸쓸한", "슬픈",
+  "먹먹한", "아련한", "묵직한", "통쾌한",
+  "분노하는", "당혹스러운", "묘한", "용기를 얻는",
 ];
-const MORE_KEYWORDS = [
-  "잔잔한", "위로가 되는", "통찰력 있는", "현실적인",
-  "긴장감 있는", "먹먹한", "유쾌한", "아련한",
+const MOODS = [
+  "매혹적인", "황홀한", "사랑스러운", "신비로운",
+  "유쾌한", "잔잔한", "포근한", "담담한",
+  "치밀한", "긴박한",
 ];
-
-// 완독량 토글(전체/일부). 저장 필드가 없어 화면 상태로만 사용한다.
-type ReadAmount = "ALL" | "PARTIAL";
+const GENRES = [
+  "일반 소설", "SF·판타지", "추리", "스릴러",
+  "로맨스", "시", "에세이", "인문",
+  "철학", "사회", "역사", "과학",
+  "경제", "경영", "자기계발", "예술", "만화",
+];
 
 function todayString() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-/** 라벨 앞의 작은 사각 불릿(시안의 ■ 마커). */
-function Bullet() {
-  return <span className="mr-2 inline-block h-3.5 w-2.5 shrink-0 rounded-[1px] bg-gray-900 align-middle" />;
+/** 한 카테고리의 단어 칩(단일 선택). */
+function WordSection({
+  title,
+  hint,
+  options,
+  selected,
+  onSelect,
+}: {
+  title: string;
+  hint: string;
+  options: string[];
+  selected: string | null;
+  onSelect: (value: string | null) => void;
+}) {
+  return (
+    <section className="mt-6">
+      <h3 className="text-base font-bold text-gray-900">
+        {title}
+        <span className="text-gray-900">*</span>
+        <span className="ml-2 text-xs font-normal text-gray-400">{hint}</span>
+      </h3>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {options.map((word) => {
+          const active = selected === word;
+          return (
+            <button
+              key={word}
+              type="button"
+              onClick={() => onSelect(active ? null : word)}
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "border-gray-900 bg-gray-900 text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {word}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 export default function CompleteReadingPage() {
@@ -43,8 +88,9 @@ export default function CompleteReadingPage() {
   const [endDate, setEndDate] = useState(todayString());
   const [readAmount, setReadAmount] = useState<ReadAmount>("ALL");
   const [rating, setRating] = useState(0);
-  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
-  const [showMore, setShowMore] = useState(false);
+  const [emotion, setEmotion] = useState<string | null>(null);
+  const [mood, setMood] = useState<string | null>(null);
+  const [genre, setGenre] = useState<string | null>(null);
   const [oneLineNote, setOneLineNote] = useState("");
 
   useEffect(() => {
@@ -71,29 +117,22 @@ export default function CompleteReadingPage() {
     return () => { cancelled = true; };
   }, [ready, recordId]);
 
-  const keywords = useMemo(() => (showMore ? [...KEYWORDS, ...MORE_KEYWORDS] : KEYWORDS), [showMore]);
-
-  // My Words는 최대 3개까지만 선택할 수 있다.
-  const MAX_KEYWORDS = 3;
-
-  function toggleKeyword(word: string) {
-    setSelectedKeywords((prev) => {
-      if (prev.includes(word)) return prev.filter((w) => w !== word);
-      if (prev.length >= MAX_KEYWORDS) return prev;
-      return [...prev, word];
-    });
-  }
+  const canSubmit =
+    !!emotion && !!mood && !!genre && oneLineNote.trim().length > 0 && !submitting;
 
   async function handleSubmit() {
-    if (!record) return;
+    if (!record || !canSubmit) return;
     setSubmitting(true);
     setError(null);
     try {
       await apiClient.completeReadingRecord(record.id, {
         endDate,
         rating: rating > 0 ? rating : undefined,
-        oneLineNote: oneLineNote.trim() || undefined,
-        myWords: selectedKeywords,
+        oneLineNote: oneLineNote.trim(),
+        emotion: emotion ?? undefined,
+        mood: mood ?? undefined,
+        genre: genre ?? undefined,
+        readAmount,
       });
       router.replace("/");
     } catch (e) {
@@ -105,26 +144,27 @@ export default function CompleteReadingPage() {
   if (!ready) return null;
 
   const book = record?.book;
-  const bookLine = book
-    ? [book.title, book.author].filter(Boolean).join(" | ")
-    : "";
+  const cover = book ? book.coverImageUrl ?? book.spineImageUrl : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white px-6 pb-12 pt-6">
-      {/* 상단 우측: 닫기 */}
-      <div className="flex justify-end">
+    <main className="mx-auto min-h-screen max-w-md bg-white px-6 pb-28 pt-6">
+      {/* 헤더 */}
+      <header className="flex items-start justify-between">
         <button
-          aria-label="닫기"
           onClick={() => router.back()}
-          className="p-1 text-gray-400 hover:text-gray-700"
+          aria-label="뒤로"
+          className="-ml-1 p-1 text-gray-900"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M15 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-      </div>
-
-      <h1 className="mt-1 text-2xl font-bold text-gray-900">나의 리뷰 :: 완독했어요!</h1>
+        <button aria-label="알림" className="p-1 text-gray-800">
+          <BellIcon />
+        </button>
+      </header>
+      <h1 className="mt-1 text-3xl font-extrabold text-gray-900">나의 리뷰</h1>
+      <div className="mt-4 border-t border-gray-200" />
 
       {loading && <p className="mt-8 text-sm text-gray-400">불러오는 중...</p>}
 
@@ -132,37 +172,44 @@ export default function CompleteReadingPage() {
         <div className="mt-8 flex flex-col items-center gap-4 py-16 text-center">
           <p className="text-sm text-gray-500">{error}</p>
           <button
-            onClick={() => router.push("/records")}
+            onClick={() => router.push("/bookbox")}
             className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
           >
-            독서 기록으로
+            북박스로
           </button>
         </div>
       )}
 
-      {!loading && record && (
+      {!loading && record && book && (
         <>
-          {/* 도서 정보 */}
-          <div className="mt-5 rounded-sm border border-gray-300 px-4 py-3">
-            <p className="text-sm font-bold text-gray-800">{bookLine}</p>
+          {/* 도서 카드 */}
+          <div className="mt-5 flex items-center gap-4 rounded-2xl border border-gray-200 p-4">
+            {cover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={cover} alt={book.title} className="h-20 w-14 shrink-0 rounded-md object-cover" />
+            ) : (
+              <div className="h-20 w-14 shrink-0 rounded-md bg-gray-200" />
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-base font-bold text-gray-900">{book.title}</p>
+              <p className="truncate text-sm text-gray-400">{book.author ?? "저자 미상"}</p>
+            </div>
           </div>
 
-          {/* 완독일 */}
+          {/* 완독 일 */}
           <div className="mt-6 flex items-center">
-            <Bullet />
-            <span className="w-20 text-sm font-medium text-gray-900">완독일</span>
+            <span className="w-20 text-base font-bold text-gray-900">완독 일</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-800"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800"
             />
           </div>
 
           {/* 완독량 */}
           <div className="mt-5 flex items-center">
-            <Bullet />
-            <span className="w-20 text-sm font-medium text-gray-900">완독량</span>
+            <span className="w-20 text-base font-bold text-gray-900">완독량</span>
             <div className="flex gap-2">
               {([
                 ["ALL", "전체 읽었어요"],
@@ -171,7 +218,7 @@ export default function CompleteReadingPage() {
                 <button
                   key={value}
                   onClick={() => setReadAmount(value)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                     readAmount === value
                       ? "border-gray-900 bg-gray-900 text-white"
                       : "border-gray-300 text-gray-500 hover:bg-gray-50"
@@ -185,8 +232,7 @@ export default function CompleteReadingPage() {
 
           {/* 별점 */}
           <div className="mt-5 flex items-center">
-            <Bullet />
-            <span className="w-20 text-sm font-medium text-gray-900">별점</span>
+            <span className="w-20 text-base font-bold text-gray-900">별점</span>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -203,70 +249,40 @@ export default function CompleteReadingPage() {
             </div>
           </div>
 
-          {/* My Words */}
-          <div className="mt-6 flex items-center">
-            <Bullet />
-            <span className="text-sm font-medium text-gray-900">My Words</span>
-            <span className="ml-2 text-xs text-gray-400">
-              {selectedKeywords.length}/{MAX_KEYWORDS}
-            </span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2">
-            {keywords.map((word) => {
-              const active = selectedKeywords.includes(word);
-              const reachedMax = selectedKeywords.length >= MAX_KEYWORDS;
-              const disabled = !active && reachedMax;
-              return (
-                <button
-                  key={word}
-                  onClick={() => toggleKeyword(word)}
-                  disabled={disabled}
-                  className={`text-sm transition-colors ${
-                    active
-                      ? "font-bold text-emerald-700"
-                      : disabled
-                        ? "cursor-not-allowed text-gray-300"
-                        : "text-emerald-600/80 hover:text-emerald-700"
-                  }`}
-                >
-                  {word}
-                </button>
-              );
-            })}
-            {!showMore && (
-              <button
-                onClick={() => setShowMore(true)}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                … (more)
-              </button>
-            )}
-          </div>
+          <div className="mt-6 border-t border-gray-200" />
+
+          {/* 나의 단어 */}
+          <h2 className="mt-6 text-2xl font-extrabold text-gray-900">
+            나의 단어<span>*</span>
+          </h2>
+          <WordSection title="감정" hint="어떤 감정이 남았나요?" options={EMOTIONS} selected={emotion} onSelect={setEmotion} />
+          <WordSection title="분위기" hint="책의 분위기는 어땠나요?" options={MOODS} selected={mood} onSelect={setMood} />
+          <WordSection title="장르" hint="어떤 책이었나요?" options={GENRES} selected={genre} onSelect={setGenre} />
 
           {/* 나의 한줄평 */}
-          <div className="mt-7 flex items-center">
-            <Bullet />
-            <span className="text-sm font-medium text-gray-900">나의 한줄평</span>
-          </div>
+          <h2 className="mt-7 text-xl font-extrabold text-gray-900">
+            나의 한줄평<span>*</span>
+          </h2>
           <textarea
             value={oneLineNote}
             onChange={(e) => setOneLineNote(e.target.value)}
             placeholder="이 책을 한 줄로 남긴다면?"
-            rows={2}
-            className="mt-3 w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm"
+            rows={3}
+            className="mt-3 w-full resize-none rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:border-gray-900"
           />
 
-          <div className="my-7 border-t border-dashed border-gray-300" />
+          {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
-          {error && <p className="mb-3 text-center text-sm text-red-600">{error}</p>}
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="mx-auto flex w-44 justify-center rounded-md border-2 border-gray-900 py-3 text-sm font-bold text-gray-900 transition-colors hover:bg-gray-900 hover:text-white disabled:opacity-50"
-          >
-            {submitting ? "저장 중..." : "완독 남기기"}
-          </button>
+          {/* 하단 고정 버튼 */}
+          <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-6 pb-6 pt-3">
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
+            >
+              {submitting ? "저장 중..." : "완독 남기기"}
+            </button>
+          </div>
         </>
       )}
     </main>
