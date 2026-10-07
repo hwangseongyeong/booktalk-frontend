@@ -78,9 +78,11 @@ export default function MeetingInvitePage() {
           <p className="mt-8 text-center text-base font-medium text-gray-500">
             📚 독서 모임에 초대받았어요
           </p>
-          <p className="mt-1 text-center text-sm text-gray-400">
-            <span className="font-bold text-gray-700">{meeting.hostNickname}</span>님의 모임이에요
-          </p>
+          {meeting.hostNickname && (
+            <p className="mt-1 text-center text-sm text-gray-400">
+              <span className="font-bold text-gray-700">{meeting.hostNickname}</span>님의 모임이에요
+            </p>
+          )}
 
           <section className="mt-5 flex flex-col items-center rounded-3xl border border-gray-200 bg-white p-7 shadow-sm">
             <MeetingCover
