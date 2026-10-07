@@ -40,6 +40,7 @@ export default function BooksPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [startingKey, setStartingKey] = useState<string | null>(null);
+  const [wishlistKey, setWishlistKey] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
 
   // 검색 결과 한 건을 식별하는 키(로딩/버튼 상태용). 목록 렌더링 key와 동일하게 맞춘다.
@@ -88,6 +89,32 @@ export default function BooksPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했습니다.");
       setStartingKey(null);
+    }
+  }
+
+  // 읽고 싶은 책으로 담기. 로컬 미등록(id 없음) 책은 먼저 등록한 뒤 위시리스트에 추가한다.
+  async function handleAddToWishlist(item: BookSearchResult) {
+    setError(null);
+    setMessage(null);
+    setWishlistKey(itemKey(item));
+    try {
+      let bookId = item.id;
+      if (bookId == null) {
+        const book = await apiClient.registerBook({
+          title: item.title,
+          author: item.author ?? undefined,
+          publisher: item.publisher ?? undefined,
+          isbn: item.isbn ?? undefined,
+          coverImageUrl: item.coverImageUrl ?? undefined,
+        });
+        bookId = book.id;
+      }
+      await apiClient.addToWishlist(bookId);
+      setMessage(`'${item.title}'을(를) 읽고 싶은 책에 담았어요.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "읽고 싶은 책 담기에 실패했습니다.");
+    } finally {
+      setWishlistKey(null);
     }
   }
 
@@ -162,15 +189,24 @@ export default function BooksPage() {
               </p>
             </div>
 
-            <PillButton
-              size="sm"
-              fullWidth={false}
-              className="shrink-0"
-              disabled={startingKey === itemKey(item)}
-              onClick={() => handleStartReading(item)}
-            >
-              {startingKey === itemKey(item) ? "시작 중" : "읽기 시작"}
-            </PillButton>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <PillButton
+                size="sm"
+                fullWidth={false}
+                disabled={startingKey === itemKey(item) || wishlistKey === itemKey(item)}
+                onClick={() => handleStartReading(item)}
+              >
+                {startingKey === itemKey(item) ? "시작 중" : "읽기 시작"}
+              </PillButton>
+              <button
+                type="button"
+                disabled={startingKey === itemKey(item) || wishlistKey === itemKey(item)}
+                onClick={() => handleAddToWishlist(item)}
+                className="rounded-full border-2 border-line px-4 py-1.5 text-sm font-bold text-muted transition-colors hover:bg-fill disabled:opacity-50"
+              >
+                {wishlistKey === itemKey(item) ? "담는 중" : "읽고 싶어요"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

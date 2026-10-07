@@ -27,7 +27,7 @@ export type BookSearchResult = {
   coverImageUrl: string | null;
 };
 
-export type ReadingStatus = "READING" | "COMPLETED";
+export type ReadingStatus = "WISHLIST" | "READING" | "COMPLETED";
 
 /** 완독량: 전체 읽었어요 / 일부 읽었어요 */
 export type ReadAmount = "ALL" | "PARTIAL";
@@ -312,6 +312,17 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
+  /** 읽고 싶은 책 담기(WISHLIST로 등록) */
+  addToWishlist: (bookId: number) =>
+    request<ReadingRecord>("/reading-records/wishlist", {
+      method: "POST",
+      body: JSON.stringify({ bookId }),
+    }),
+
+  /** 읽고 싶은 책 → 읽기 시작(READING) 전환 */
+  startReadingFromWishlist: (id: number) =>
+    request<ReadingRecord>(`/reading-records/${id}/start`, { method: "PATCH" }),
 
   completeReadingRecord: (
     id: number,

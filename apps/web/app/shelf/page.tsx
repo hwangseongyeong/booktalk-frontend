@@ -83,7 +83,17 @@ function ShelfEmptyState({ tab }: { tab: ShelfTab }) {
   );
 }
 
-function BookCard({ book, showComplete }: { book: ShelfEntry; showComplete?: boolean }) {
+function BookCard({
+  book,
+  showComplete,
+  onStart,
+  starting,
+}: {
+  book: ShelfEntry;
+  showComplete?: boolean;
+  onStart?: () => void;
+  starting?: boolean;
+}) {
   const image = book.coverImageUrl ?? book.spineImageUrl;
   return (
     <div className="flex flex-col gap-1.5">
@@ -114,15 +124,40 @@ function BookCard({ book, showComplete }: { book: ShelfEntry; showComplete?: boo
           완독하기
         </Link>
       )}
+      {onStart && (
+        <button
+          onClick={onStart}
+          disabled={starting}
+          className="flex justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+        >
+          {starting ? "시작 중..." : "읽기 시작"}
+        </button>
+      )}
     </div>
   );
 }
 
-function BookGrid({ books, showComplete }: { books: ShelfEntry[]; showComplete?: boolean }) {
+function BookGrid({
+  books,
+  showComplete,
+  onStart,
+  startingKey,
+}: {
+  books: ShelfEntry[];
+  showComplete?: boolean;
+  onStart?: (key: string) => void;
+  startingKey?: string | null;
+}) {
   return (
     <div className="grid grid-cols-3 gap-3">
       {books.map((book) => (
-        <BookCard key={book.key} book={book} showComplete={showComplete} />
+        <BookCard
+          key={book.key}
+          book={book}
+          showComplete={showComplete}
+          onStart={onStart ? () => onStart(book.key) : undefined}
+          starting={startingKey === book.key}
+        />
       ))}
     </div>
   );
@@ -134,8 +169,11 @@ export default function ShelfPage() {
   const router = useRouter();
   const [completed, setCompleted] = useState<ShelfEntry[]>([]);
   const [reading, setReading] = useState<ShelfEntry[]>([]);
+  const [wishlist, setWishlist] = useState<ShelfEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [startingKey, setStartingKey] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("읽는 중");
   const [profile, setProfile] = useState<AuthUser | null>(null);
 
@@ -157,13 +195,15 @@ export default function ShelfPage() {
     async function load() {
       setLoadError(null);
       try {
-        const [completedRecords, readingRecords] = await Promise.all([
+        const [completedRecords, readingRecords, wishlistRecords] = await Promise.all([
           apiClient.getMyReadingRecords("COMPLETED"),
           apiClient.getMyReadingRecords("READING"),
+          apiClient.getMyReadingRecords("WISHLIST"),
         ]);
         if (!cancelled) {
           setCompleted(completedRecords.map(toShelfEntry));
           setReading(readingRecords.map(toShelfEntry));
+          setWishlist(wishlistRecords.map(toShelfEntry));
         }
       } catch (e) {
         if (cancelled) return;
@@ -184,12 +224,27 @@ export default function ShelfPage() {
     return () => { cancelled = true; };
   }, [ready, router]);
 
+  // 읽고 싶은 책 → 읽기 시작. 성공하면 위시리스트에서 '읽는 중'으로 옮기고 해당 탭으로 전환한다.
+  async function handleStartReading(key: string) {
+    setStartingKey(key);
+    setActionError(null);
+    try {
+      await apiClient.startReadingFromWishlist(Number(key));
+      const moved = wishlist.find((b) => b.key === key);
+      setWishlist((prev) => prev.filter((b) => b.key !== key));
+      if (moved) setReading((prev) => [moved, ...prev]);
+      setTab("읽는 중");
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했어요.");
+    } finally {
+      setStartingKey(null);
+    }
+  }
+
   if (!ready) return null;
 
-  // 읽고 싶은책은 아직 API 상태값이 없어 항상 빈 목록으로 둔다.
-  const wantToRead: ShelfEntry[] = [];
   const activeBooks =
-    tab === "읽은 책" ? completed : tab === "읽는 중" ? reading : wantToRead;
+    tab === "읽은 책" ? completed : tab === "읽는 중" ? reading : wishlist;
   const hasBooks = activeBooks.length > 0;
   // 통계는 책이 있을 때만 노출한다(빈 상태 시안 기준).
   const showStats = !loading && !loadError && tab === "읽은 책" && hasBooks;
@@ -260,7 +315,17 @@ export default function ShelfPage() {
         ) : !hasBooks ? (
           <ShelfEmptyState tab={tab} />
         ) : (
-          <BookGrid books={activeBooks} showComplete={tab === "읽는 중"} />
+          <>
+            {actionError && (
+              <p className="mb-3 text-center text-sm text-red-600">{actionError}</p>
+            )}
+            <BookGrid
+              books={activeBooks}
+              showComplete={tab === "읽는 중"}
+              onStart={tab === "읽고 싶은책" ? handleStartReading : undefined}
+              startingKey={startingKey}
+            />
+          </>
         )}
 
         {/* 하단 책 추가 진입점.
