@@ -52,12 +52,12 @@ const EMPTY_CONFIG: Record<
   { title: string; subtitle: [string, string]; buttonLabel: string }
 > = {
   "완독책": {
-    title: "아직 읽은 책이 없어요",
+    title: "아직 완독책이 없어요",
     subtitle: ["완독한 책을 등록하면", "나만의 독서 기록이 쌓여요"],
     buttonLabel: "+ 책 등록",
   },
   "독서중": {
-    title: "지금 읽고 있는 책이 없어요",
+    title: "아직 독서중인 책이 없어요",
     subtitle: ["요즘 펼친 책을 등록하고", "오늘의 독서를 기록해보세요"],
     buttonLabel: "+ 책 추가",
   },
