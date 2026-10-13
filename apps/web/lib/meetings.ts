@@ -1,5 +1,5 @@
 /**
- * 소통(독서 모임) 화면용 라벨/표시 헬퍼.
+ * 북메이트(독서 모임) 화면용 라벨/표시 헬퍼.
  * 데이터 타입은 packages/api-client 의 것을 그대로 재사용한다(중복 정의 금지 — CLAUDE.md).
  */
 import type { ReadingMode, MeetingStatus } from "@booktalk/api-client";

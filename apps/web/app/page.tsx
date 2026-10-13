@@ -105,7 +105,7 @@ export default function HomePage() {
     <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-24 pt-8">
       {/* 상단 우측: 프로필 아바타 */}
       <div className="flex justify-end">
-        <Link href="/my" aria-label="마이 페이지">
+        <Link href="/my" aria-label="내정보 페이지">
           <Avatar
             nickname={profile?.nickname}
             src={profile?.profileImageUrl}

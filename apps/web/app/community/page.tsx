@@ -119,7 +119,7 @@ export default function CommunityPage() {
           aria-label="뒤로"
         >
           <span aria-hidden>‹</span>
-          소통
+          북메이트
         </button>
         <button aria-label="알림" className="text-gray-800">
           <BellIcon />

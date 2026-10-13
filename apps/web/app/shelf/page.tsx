@@ -23,9 +23,9 @@ function fallbackColor(seed: string) {
 }
 
 // ---------- 타입 ----------
-type ShelfTab = "읽은 책" | "읽는 중" | "읽고 싶은책";
+type ShelfTab = "완독책" | "독서중" | "읽고 싶은책";
 
-/** 책장에 올릴 한 권. 독서 기록(ReadingRecord)에서 화면에 필요한 값만 뽑은 형태. */
+/** 북로그에 올릴 한 권. 독서 기록(ReadingRecord)에서 화면에 필요한 값만 뽑은 형태. */
 type ShelfEntry = {
   key: string;
   title: string;
@@ -51,12 +51,12 @@ const EMPTY_CONFIG: Record<
   ShelfTab,
   { title: string; subtitle: [string, string]; buttonLabel: string }
 > = {
-  "읽은 책": {
+  "완독책": {
     title: "아직 읽은 책이 없어요",
     subtitle: ["완독한 책을 등록하면", "나만의 독서 기록이 쌓여요"],
     buttonLabel: "+ 책 등록",
   },
-  "읽는 중": {
+  "독서중": {
     title: "지금 읽고 있는 책이 없어요",
     subtitle: ["요즘 펼친 책을 등록하고", "오늘의 독서를 기록해보세요"],
     buttonLabel: "+ 책 추가",
@@ -174,7 +174,7 @@ export default function ShelfPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [startingKey, setStartingKey] = useState<string | null>(null);
-  const [tab, setTab] = useState<ShelfTab>("읽는 중");
+  const [tab, setTab] = useState<ShelfTab>("독서중");
   const [profile, setProfile] = useState<AuthUser | null>(null);
 
   useEffect(() => {
@@ -214,7 +214,7 @@ export default function ShelfPage() {
           router.replace("/login");
           return;
         }
-        setLoadError("책장을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+        setLoadError("북로그를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -224,7 +224,7 @@ export default function ShelfPage() {
     return () => { cancelled = true; };
   }, [ready, router]);
 
-  // 읽고 싶은 책 → 읽기 시작. 성공하면 위시리스트에서 '읽는 중'으로 옮기고 해당 탭으로 전환한다.
+  // 읽고 싶은 책 → 읽기 시작. 성공하면 위시리스트에서 '독서중'으로 옮기고 해당 탭으로 전환한다.
   async function handleStartReading(key: string) {
     setStartingKey(key);
     setActionError(null);
@@ -233,7 +233,7 @@ export default function ShelfPage() {
       const moved = wishlist.find((b) => b.key === key);
       setWishlist((prev) => prev.filter((b) => b.key !== key));
       if (moved) setReading((prev) => [moved, ...prev]);
-      setTab("읽는 중");
+      setTab("독서중");
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했어요.");
     } finally {
@@ -244,16 +244,16 @@ export default function ShelfPage() {
   if (!ready) return null;
 
   const activeBooks =
-    tab === "읽은 책" ? completed : tab === "읽는 중" ? reading : wishlist;
+    tab === "완독책" ? completed : tab === "독서중" ? reading : wishlist;
   const hasBooks = activeBooks.length > 0;
   // 통계는 책이 있을 때만 노출한다(빈 상태 시안 기준).
-  const showStats = !loading && !loadError && tab === "읽은 책" && hasBooks;
+  const showStats = !loading && !loadError && tab === "완독책" && hasBooks;
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-white pb-24">
       {/* 헤더 */}
       <header className="flex items-center justify-between px-5 pt-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">내 책장</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">북로그</h1>
         <div className="flex items-center gap-3 text-gray-800">
           <button aria-label="공유">
             <ShareIcon />
@@ -261,7 +261,7 @@ export default function ShelfPage() {
           <button aria-label="알림">
             <BellIcon />
           </button>
-          <Link href="/my" aria-label="마이 페이지">
+          <Link href="/my" aria-label="내정보 페이지">
             <Avatar
               nickname={profile?.nickname}
               src={profile?.profileImageUrl}
@@ -274,7 +274,7 @@ export default function ShelfPage() {
 
       {/* 탭 */}
       <div className="mt-5 flex gap-6 border-b border-gray-200 px-5">
-        {(["읽는 중", "읽은 책", "읽고 싶은책"] as ShelfTab[]).map((t) => (
+        {(["독서중", "완독책", "읽고 싶은책"] as ShelfTab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -289,7 +289,7 @@ export default function ShelfPage() {
         ))}
       </div>
 
-      {/* 통계 (읽은 책, 책이 있을 때만) */}
+      {/* 통계 (완독책, 책이 있을 때만) */}
       {showStats && (
         <div className="mt-6 px-5">
           <p className="text-center text-base font-semibold text-gray-800">
@@ -298,7 +298,7 @@ export default function ShelfPage() {
         </div>
       )}
 
-      {/* 책장 */}
+      {/* 북로그 */}
       <div className="mt-5 px-5">
         {loading ? (
           <p className="text-center text-sm text-gray-300">불러오는 중...</p>
@@ -321,7 +321,7 @@ export default function ShelfPage() {
             )}
             <BookGrid
               books={activeBooks}
-              showComplete={tab === "읽는 중"}
+              showComplete={tab === "독서중"}
               onStart={tab === "읽고 싶은책" ? handleStartReading : undefined}
               startingKey={startingKey}
             />

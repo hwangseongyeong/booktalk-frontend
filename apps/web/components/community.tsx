@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 소통(독서 모임) 화면 공용 조각.
+ * 북메이트(독서 모임) 화면 공용 조각.
  * - ReadingModeBadge: 함께 읽기(파랑) / 각자 읽기(노랑) 알약 배지
  * - MeetingCover: 책 표지. 표지 URL이 없으면 primaryColor + 제목 폴백
  */

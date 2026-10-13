@@ -62,7 +62,7 @@ export default function MeetingInvitePage() {
         <button
           onClick={() => router.push("/community")}
           className="flex items-center gap-2 text-2xl font-bold text-gray-900"
-          aria-label="소통으로"
+          aria-label="북메이트로"
         >
           <span aria-hidden>‹</span>
           초대

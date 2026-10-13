@@ -35,7 +35,7 @@ export default function MyPage() {
 
   return (
     <main className="mx-auto max-w-md p-6 pb-24">
-      <h1 className="text-xl font-medium">마이</h1>
+      <h1 className="text-xl font-medium">내정보</h1>
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {loading && <p className="mt-4 text-sm text-gray-400">불러오는 중...</p>}

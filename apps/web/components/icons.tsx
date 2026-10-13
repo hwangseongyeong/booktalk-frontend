@@ -64,7 +64,7 @@ export function PencilIcon({ size = 52, ...props }: IconProps) {
   );
 }
 
-/** 말풍선 — "소통" */
+/** 말풍선 — "북메이트" */
 export function BubbleIcon({ size = 52, ...props }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 52 52" fill="none" aria-hidden {...props}>
@@ -161,7 +161,7 @@ export function BellIcon({ size = 26, ...props }: IconProps) {
   );
 }
 
-/* ---------- 하단 내비게이션 (홈·책장·기록·소통·마이) ---------- */
+/* ---------- 하단 내비게이션 (홈·북로그·기록·북메이트·내정보) ---------- */
 export function NavHomeIcon(props: IconProps) {
   return (
     <svg {...base(props)} aria-hidden>

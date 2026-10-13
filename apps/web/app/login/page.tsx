@@ -42,7 +42,7 @@ function WelcomeScreen({ onNext }: { onNext: () => void }) {
 
 const FEATURES = [
   { Icon: PencilIcon, title: "기록", desc: "읽은 책을 정리하고\n나만의 서가를 완성해요" },
-  { Icon: BubbleIcon, title: "소통", desc: "친구의 책을 보고\n함께 이야기 나눠요" },
+  { Icon: BubbleIcon, title: "북메이트", desc: "친구의 책을 보고\n함께 이야기 나눠요" },
   { Icon: PaperPlaneIcon, title: "공유", desc: "나의 독서 기록을\n이미지로 공유해요" },
 ];
 
