@@ -23,7 +23,7 @@ function fallbackColor(seed: string) {
 }
 
 // ---------- 타입 ----------
-type ShelfTab = "완독책" | "독서중" | "읽고 싶은책";
+type ShelfTab = "완독책" | "독서중" | "담아둔책";
 
 /** 북로그에 올릴 한 권. 독서 기록(ReadingRecord)에서 화면에 필요한 값만 뽑은 형태. */
 type ShelfEntry = {
@@ -61,7 +61,7 @@ const EMPTY_CONFIG: Record<
     subtitle: ["요즘 펼친 책을 등록하고", "오늘의 독서를 기록해보세요"],
     buttonLabel: "+ 책 추가",
   },
-  "읽고 싶은책": {
+  "담아둔책": {
     title: "아직 담아둔 책이 없어요",
     subtitle: ["읽고 싶은 책을 미리 담아두면", "다음에 뭘 읽을지 고민이 줄어들어요"],
     buttonLabel: "+ 책 등록",
@@ -309,11 +309,11 @@ export default function ShelfPage() {
 
       {/* 탭 */}
       <div className="mt-5 flex gap-6 border-b border-gray-200 px-5">
-        {(["독서중", "완독책", "읽고 싶은책"] as ShelfTab[]).map((t) => (
+        {(["독서중", "완독책", "담아둔책"] as ShelfTab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`pb-2.5 text-sm font-medium transition-colors ${
+            className={`pb-2.5 text-lg font-medium transition-colors ${
               tab === t
                 ? "border-b-2 border-gray-900 text-gray-900"
                 : "text-gray-400"
@@ -359,7 +359,7 @@ export default function ShelfPage() {
               showComplete={tab === "독서중"}
               onCancel={tab === "독서중" ? handleCancelReading : undefined}
               cancelingKey={cancelingKey}
-              onStart={tab === "읽고 싶은책" ? handleStartReading : undefined}
+              onStart={tab === "담아둔책" ? handleStartReading : undefined}
               startingKey={startingKey}
             />
           </>
