@@ -106,7 +106,7 @@ export default function HomePage() {
       {/* 상단: 좌측 로고 + 우측 프로필 아바타 */}
       <div className="flex items-center justify-between">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="text42" width={112} style={{ width: 112 }} className="h-auto" />
+        <img src="/logo.png" alt="text42" width={168} style={{ width: 168 }} className="h-auto" />
         <Link href="/my" aria-label="내정보 페이지">
           <Avatar
             nickname={profile?.nickname}
