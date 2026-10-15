@@ -1,112 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiClient, resolveAssetUrl, type ReadingRecord, type ReadAmount } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { BellIcon } from "../../../../components/icons";
-
-// 나의 감상 태그 — 감정·분위기에서 선택한다(최대 3개).
-const EMOTIONS = [
-  "감동적인", "따뜻한", "위로가 되는", "여운이 깊은",
-  "설레는", "벅찬", "쓸쓸한", "슬픈",
-  "먹먹한", "아련한", "묵직한", "통쾌한",
-  "분노하는", "당혹스러운", "묘한", "용기를 얻는",
-];
-const MOODS = [
-  "매혹적인", "황홀한", "사랑스러운", "신비로운",
-  "유쾌한", "잔잔한", "포근한", "담담한",
-  "치밀한", "긴박한",
-];
-// 감정 + 분위기를 한 섹션에서 함께 고른다. 저장 시 EMOTIONS/MOODS로 다시 분류한다.
-const FEELINGS = [...EMOTIONS, ...MOODS];
+import { FEELINGS, WordSection, splitFeelings, toggleFeeling } from "../../../../components/review-tags";
 
 function todayString() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-const MAX_PER_CATEGORY = 3;
-// 접힌 상태에서 칩을 약 4줄까지만 노출한다(칩 높이 ~38px + gap 8px 기준).
-const COLLAPSED_MAX_PX = 184;
-
-/** 한 카테고리의 단어 칩(최대 3개 다중 선택). 접힌 상태에선 4줄까지만 보이고 more로 토글한다. */
-function WordSection({
-  title,
-  hint,
-  options,
-  selected,
-  onToggle,
-}: {
-  title: string;
-  hint: string;
-  options: string[];
-  selected: string[];
-  onToggle: (value: string) => void;
-}) {
-  const reachedMax = selected.length >= MAX_PER_CATEGORY;
-  const chipsRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
-
-  // 전체 칩 높이(scrollHeight)가 접힘 높이를 넘으면 more 버튼을 노출한다. 너비 변화 시 재측정.
-  useEffect(() => {
-    const el = chipsRef.current;
-    if (!el) return;
-    const check = () => setHasMore(el.scrollHeight > COLLAPSED_MAX_PX + 4);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, [options]);
-
-  return (
-    <section className="mt-6">
-      <h3 className="text-base font-bold text-gray-900">
-        {title}
-        <span className="text-gray-900">*</span>
-        <span className="ml-2 text-xs font-normal text-gray-400">{hint}</span>
-        <span className="ml-2 text-xs font-normal text-gray-400">
-          {selected.length}/{MAX_PER_CATEGORY}
-        </span>
-      </h3>
-      <div
-        ref={chipsRef}
-        className={`mt-3 flex flex-wrap gap-2 ${expanded ? "" : "overflow-hidden"}`}
-        style={{ maxHeight: expanded ? undefined : COLLAPSED_MAX_PX }}
-      >
-        {options.map((word) => {
-          const active = selected.includes(word);
-          const disabled = !active && reachedMax;
-          return (
-            <button
-              key={word}
-              type="button"
-              onClick={() => onToggle(word)}
-              disabled={disabled}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                active
-                  ? "border-gray-900 bg-gray-900 text-white"
-                  : disabled
-                    ? "cursor-not-allowed border-gray-200 bg-white text-gray-300"
-                    : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              {word}
-            </button>
-          );
-        })}
-      </div>
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-2 text-sm font-bold text-gray-400 hover:text-gray-900"
-        >
-          {expanded ? "접기" : "more"}
-        </button>
-      )}
-    </section>
-  );
 }
 
 export default function CompleteReadingPage() {
@@ -125,15 +28,6 @@ export default function CompleteReadingPage() {
   const [rating, setRating] = useState(0);
   const [feelings, setFeelings] = useState<string[]>([]);
   const [oneLineNote, setOneLineNote] = useState("");
-
-  // 감정·분위기 토글(최대 3개). 이미 있으면 제거, 없고 3개 미만이면 추가.
-  function toggleFeeling(word: string) {
-    setFeelings((prev) => {
-      if (prev.includes(word)) return prev.filter((w) => w !== word);
-      if (prev.length >= MAX_PER_CATEGORY) return prev;
-      return [...prev, word];
-    });
-  }
 
   useEffect(() => {
     if (!ready) return;
@@ -174,8 +68,7 @@ export default function CompleteReadingPage() {
         endDate,
         rating: rating > 0 ? rating : undefined,
         oneLineNote: oneLineNote.trim(),
-        emotions: feelings.filter((w) => EMOTIONS.includes(w)),
-        moods: feelings.filter((w) => MOODS.includes(w)),
+        ...splitFeelings(feelings),
         genres: [],
         readAmount,
       });
@@ -300,7 +193,7 @@ export default function CompleteReadingPage() {
           <h2 className="mt-6 text-2xl font-extrabold text-gray-900">
             나의 감상 태그<span>*</span>
           </h2>
-          <WordSection title="감정·분위기" hint="어떤 느낌이 남았나요?" options={FEELINGS} selected={feelings} onToggle={toggleFeeling} />
+          <WordSection title="감정·분위기" hint="어떤 느낌이 남았나요?" options={FEELINGS} selected={feelings} onToggle={toggleFeeling(setFeelings)} />
 
           {/* 나의 한줄평 */}
           <h2 className="mt-7 text-xl font-extrabold text-gray-900">
