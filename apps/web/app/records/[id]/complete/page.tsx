@@ -6,7 +6,7 @@ import { apiClient, resolveAssetUrl, type ReadingRecord, type ReadAmount } from 
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { BellIcon } from "../../../../components/icons";
 
-// 나의 감성 태그 — 감정·분위기에서 선택한다(최대 3개).
+// 나의 감상 태그 — 감정·분위기에서 선택한다(최대 3개).
 const EMOTIONS = [
   "감동적인", "따뜻한", "위로가 되는", "여운이 깊은",
   "설레는", "벅찬", "쓸쓸한", "슬픈",
@@ -296,9 +296,9 @@ export default function CompleteReadingPage() {
 
           <div className="mt-6 border-t border-gray-200" />
 
-          {/* 나의 감성 태그 */}
+          {/* 나의 감상 태그 */}
           <h2 className="mt-6 text-2xl font-extrabold text-gray-900">
-            나의 감성 태그<span>*</span>
+            나의 감상 태그<span>*</span>
           </h2>
           <WordSection title="감정·분위기" hint="어떤 느낌이 남았나요?" options={FEELINGS} selected={feelings} onToggle={toggleFeeling} />
 
