@@ -85,6 +85,7 @@ function ShelfEmptyState({ tab }: { tab: ShelfTab }) {
 
 function BookCard({
   book,
+  href,
   showComplete,
   onCancel,
   canceling,
@@ -92,6 +93,7 @@ function BookCard({
   starting,
 }: {
   book: ShelfEntry;
+  href?: string;
   showComplete?: boolean;
   onCancel?: () => void;
   canceling?: boolean;
@@ -99,27 +101,30 @@ function BookCard({
   starting?: boolean;
 }) {
   const image = book.coverImageUrl ?? book.spineImageUrl;
+  const cover = (
+    <div
+      title={book.title}
+      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
+    >
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={book.title} className="h-full w-full object-cover" />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
+          style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+        >
+          <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+          {book.author && (
+            <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
   return (
     <div className="flex flex-col gap-1.5">
-      <div
-        title={book.title}
-        className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
-      >
-        {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={book.title} className="h-full w-full object-cover" />
-        ) : (
-          <div
-            className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center"
-            style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
-          >
-            <span className="line-clamp-3 text-[11px] font-bold leading-tight text-white">{book.title}</span>
-            {book.author && (
-              <span className="line-clamp-1 text-[9px] text-white/70">{book.author}</span>
-            )}
-          </div>
-        )}
-      </div>
+      {href ? <Link href={href}>{cover}</Link> : cover}
       {showComplete && (
         <div className="flex gap-1">
           <Link
@@ -152,6 +157,7 @@ function BookCard({
 
 function BookGrid({
   books,
+  buildHref,
   showComplete,
   onCancel,
   cancelingKey,
@@ -159,6 +165,7 @@ function BookGrid({
   startingKey,
 }: {
   books: ShelfEntry[];
+  buildHref?: (key: string) => string;
   showComplete?: boolean;
   onCancel?: (key: string) => void;
   cancelingKey?: string | null;
@@ -171,6 +178,7 @@ function BookGrid({
         <BookCard
           key={book.key}
           book={book}
+          href={buildHref ? buildHref(book.key) : undefined}
           showComplete={showComplete}
           onCancel={onCancel ? () => onCancel(book.key) : undefined}
           canceling={cancelingKey === book.key}
@@ -356,6 +364,7 @@ export default function ShelfPage() {
             )}
             <BookGrid
               books={activeBooks}
+              buildHref={tab === "완독책" ? (key) => `/records/${key}/review` : undefined}
               showComplete={tab === "독서중"}
               onCancel={tab === "독서중" ? handleCancelReading : undefined}
               cancelingKey={cancelingKey}
