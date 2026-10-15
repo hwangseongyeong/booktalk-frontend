@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiClient, type ReadingRecord, type ReadAmount } from "@booktalk/api-client";
+import { apiClient, resolveAssetUrl, type ReadingRecord, type ReadAmount } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { BellIcon } from "../../../../components/icons";
 
@@ -168,7 +168,7 @@ export default function CompleteReadingPage() {
   if (!ready) return null;
 
   const book = record?.book;
-  const cover = book ? book.coverImageUrl ?? book.spineImageUrl : null;
+  const cover = book ? book.coverImageUrl ?? resolveAssetUrl(book.spineImageUrl) : null;
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-white px-6 pb-28 pt-6">

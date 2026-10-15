@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, authStorage, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, authStorage, resolveAssetUrl, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { BellIcon, ShareIcon } from "../../components/icons";
 import { BottomNav } from "../../components/bottom-nav";
@@ -61,7 +61,7 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
     author: record.book.author,
     publisher: record.book.publisher,
     coverImageUrl: record.book.coverImageUrl,
-    spineImageUrl: record.book.spineImageUrl,
+    spineImageUrl: resolveAssetUrl(record.book.spineImageUrl),
     primaryColor: record.book.primaryColor,
     myWords: record.myWords,
     oneLineNote: record.oneLineNote,

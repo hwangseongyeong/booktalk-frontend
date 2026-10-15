@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, type AuthUser, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, resolveAssetUrl, type AuthUser, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BottomNav } from "../components/bottom-nav";
 import { Avatar } from "../components/ui";
@@ -34,7 +34,7 @@ function Stars({ rating }: { rating: number }) {
 
 /** 진행 중 카드의 도서 표지(표지 없으면 책등 → 색상 폴백). */
 function BookCover({ book }: { book: ReadingRecord["book"] }) {
-  const image = book.coverImageUrl ?? book.spineImageUrl;
+  const image = book.coverImageUrl ?? resolveAssetUrl(book.spineImageUrl);
   if (image) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

@@ -1,6 +1,27 @@
 // TODO: 백엔드 Swagger 스펙이 안정화되면 openapi-typescript로 자동 생성된 타입으로 교체
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
+/** API 서버 origin(예: http://localhost:8080). 상대 경로 애셋(책등 SVG 등) 해석용. */
+const API_ORIGIN = (() => {
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return "";
+  }
+})();
+
+/**
+ * 백엔드가 내려주는 이미지 URL을 <img src> 에 바로 쓸 수 있는 절대 URL로 바꾼다.
+ * - 외부 절대 URL(표지: http...)·data URL 은 그대로 둔다.
+ * - '/api/v1/...' 같은 상대 경로(책등 SVG: /api/v1/books/{id}/spine.svg)는 API origin을 붙인다.
+ *   책등이 S3 저장 URL → 실시간 렌더 엔드포인트(상대 경로)로 바뀌면서 필요해졌다.
+ */
+export function resolveAssetUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/^(https?:)?\/\//.test(url) || url.startsWith("data:")) return url;
+  return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 // ---------- 도메인 타입 ----------
 export type Book = {
   id: number;

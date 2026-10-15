@@ -5,7 +5,7 @@
  * - ReadingModeBadge: 함께 읽기(파랑) / 각자 읽기(노랑) 알약 배지
  * - MeetingCover: 책 표지. 표지 URL이 없으면 primaryColor + 제목 폴백
  */
-import type { ReadingMode } from "@booktalk/api-client";
+import { resolveAssetUrl, type ReadingMode } from "@booktalk/api-client";
 import { READING_MODE_LABEL } from "../lib/meetings";
 
 const MODE_BADGE: Record<ReadingMode, string> = {
@@ -41,11 +41,13 @@ export function MeetingCover({
   className?: string;
 }) {
   const box = `${className} shrink-0 overflow-hidden rounded-md`;
+  // 표지가 없어 책등(상대 경로 /api/v1/...)이 넘어온 경우 API origin을 붙여 절대 URL로.
+  const src = resolveAssetUrl(coverImageUrl);
 
-  if (coverImageUrl) {
+  if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={coverImageUrl} alt={title} className={`${box} object-cover`} />
+      <img src={src} alt={title} className={`${box} object-cover`} />
     );
   }
   return (
