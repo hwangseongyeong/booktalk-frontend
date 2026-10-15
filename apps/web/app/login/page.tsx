@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { buildAuthorizeUrl, OAUTH_LABELS, type OAuthProviderKey } from "../../lib/oauthProviders";
 import {
-  BookTalkLogo,
   BubbleIcon,
   PaperPlaneIcon,
   PencilIcon,
@@ -13,11 +12,13 @@ import { PillButton, ScreenShell } from "../../components/ui";
 const ONBOARDING_KEY = "booktalk_onboarding_done";
 const PROVIDERS: OAuthProviderKey[] = ["kakao", "naver", "google"];
 
-function Wordmark({ logoSize = 116 }: { logoSize?: number }) {
+// 로고(TEXT42 워드마크)는 이름·태그라인을 모두 포함한 완성형이라 별도 텍스트 없이 이미지만 쓴다.
+// 로고 배경이 앱 배경(bg-paper #FAF9F5)과 같은 미색이라 화면에 자연스럽게 얹힌다.
+function Wordmark({ width = 220 }: { width?: number }) {
   return (
-    <div className="flex flex-col items-center gap-3 text-ink">
-      <BookTalkLogo size={logoSize} />
-      <p className="text-2xl font-bold tracking-tight">BookTalk</p>
+    <div className="flex flex-col items-center">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="text42" width={width} style={{ width }} className="h-auto" />
     </div>
   );
 }
@@ -26,15 +27,15 @@ function WelcomeScreen({ onNext }: { onNext: () => void }) {
   return (
     <ScreenShell
       className="items-center justify-center gap-10 text-center"
-      footer={<PillButton onClick={onNext}>BookTalk은 →</PillButton>}
+      footer={<PillButton onClick={onNext}>text42는 →</PillButton>}
     >
-      <Wordmark logoSize={124} />
+      <Wordmark width={248} />
       <p className="text-base font-medium leading-loose text-ink-soft">
         책을 읽고, 생각을 가지고 놀고
         <br />
         이야기를 나누다.
         <br />
-        북톡(가제)에 오신 걸 환영합니다!
+        text42에 오신 걸 환영합니다!
       </p>
     </ScreenShell>
   );
@@ -83,7 +84,7 @@ function LoginScreen() {
         </>
       }
     >
-      <Wordmark logoSize={104} />
+      <Wordmark width={208} />
       <p className="text-sm font-medium leading-relaxed text-muted">
         소셜 계정으로 로그인하고
         <br />내 서재를 만들어보세요

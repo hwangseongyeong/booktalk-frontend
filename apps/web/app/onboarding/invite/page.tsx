@@ -46,7 +46,7 @@ export default function InvitePage() {
         : "";
     try {
       if (navigator.share) {
-        await navigator.share({ title: "BookTalk", text: "북톡에서 같이 책 읽어요", url });
+        await navigator.share({ title: "text42", text: "text42에서 같이 책 읽어요", url });
       } else {
         await navigator.clipboard.writeText(url);
         setCopied(true);

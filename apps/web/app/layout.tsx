@@ -3,8 +3,14 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "BookTalk",
+  title: "text42",
   description: "읽은 책이 하나의 서재가 되다",
+  icons: { icon: "/logo.png", apple: "/logo.png" },
+  openGraph: {
+    title: "text42",
+    description: "읽은 책이 하나의 서재가 되다",
+    images: ["/logo.png"],
+  },
 };
 
 export const viewport: Viewport = {
