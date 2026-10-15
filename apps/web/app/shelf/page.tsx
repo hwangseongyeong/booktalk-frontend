@@ -86,11 +86,15 @@ function ShelfEmptyState({ tab }: { tab: ShelfTab }) {
 function BookCard({
   book,
   showComplete,
+  onCancel,
+  canceling,
   onStart,
   starting,
 }: {
   book: ShelfEntry;
   showComplete?: boolean;
+  onCancel?: () => void;
+  canceling?: boolean;
   onStart?: () => void;
   starting?: boolean;
 }) {
@@ -117,12 +121,21 @@ function BookCard({
         )}
       </div>
       {showComplete && (
-        <Link
-          href={`/records/${book.key}/complete`}
-          className="flex justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white"
-        >
-          완독하기
-        </Link>
+        <div className="flex gap-1">
+          <Link
+            href={`/records/${book.key}/complete`}
+            className="flex flex-1 justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white"
+          >
+            완독
+          </Link>
+          <button
+            onClick={onCancel}
+            disabled={canceling}
+            className="flex flex-1 justify-center rounded-full border border-gray-900 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-900 disabled:opacity-50"
+          >
+            {canceling ? "취소 중" : "취소"}
+          </button>
+        </div>
       )}
       {onStart && (
         <button
@@ -140,11 +153,15 @@ function BookCard({
 function BookGrid({
   books,
   showComplete,
+  onCancel,
+  cancelingKey,
   onStart,
   startingKey,
 }: {
   books: ShelfEntry[];
   showComplete?: boolean;
+  onCancel?: (key: string) => void;
+  cancelingKey?: string | null;
   onStart?: (key: string) => void;
   startingKey?: string | null;
 }) {
@@ -155,6 +172,8 @@ function BookGrid({
           key={book.key}
           book={book}
           showComplete={showComplete}
+          onCancel={onCancel ? () => onCancel(book.key) : undefined}
+          canceling={cancelingKey === book.key}
           onStart={onStart ? () => onStart(book.key) : undefined}
           starting={startingKey === book.key}
         />
@@ -174,6 +193,7 @@ export default function ShelfPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [startingKey, setStartingKey] = useState<string | null>(null);
+  const [cancelingKey, setCancelingKey] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("독서중");
   const [profile, setProfile] = useState<AuthUser | null>(null);
 
@@ -238,6 +258,21 @@ export default function ShelfPage() {
       setActionError(e instanceof Error ? e.message : "읽기 시작 처리에 실패했어요.");
     } finally {
       setStartingKey(null);
+    }
+  }
+
+  // 독서중 취소 → 기록 삭제. 성공하면 독서중 목록에서 제거한다.
+  async function handleCancelReading(key: string) {
+    if (!window.confirm("독서중 기록을 취소할까요? 이 책은 독서중 목록에서 사라져요.")) return;
+    setCancelingKey(key);
+    setActionError(null);
+    try {
+      await apiClient.cancelReadingRecord(Number(key));
+      setReading((prev) => prev.filter((b) => b.key !== key));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "취소 처리에 실패했어요.");
+    } finally {
+      setCancelingKey(null);
     }
   }
 
@@ -322,6 +357,8 @@ export default function ShelfPage() {
             <BookGrid
               books={activeBooks}
               showComplete={tab === "독서중"}
+              onCancel={tab === "독서중" ? handleCancelReading : undefined}
+              cancelingKey={cancelingKey}
               onStart={tab === "읽고 싶은책" ? handleStartReading : undefined}
               startingKey={startingKey}
             />

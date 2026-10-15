@@ -362,6 +362,10 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
+  /** 독서중 취소 — 독서 기록을 삭제한다(독서중 목록에서 제거) */
+  cancelReadingRecord: (id: number) =>
+    request<void>(`/reading-records/${id}`, { method: "DELETE" }),
+
   // ---------- 서재 ----------
   getMonthlyShelf: (yearMonth?: string) =>
     request<MonthlyShelf>(`/shelves/monthly${yearMonth ? `?yearMonth=${yearMonth}` : ""}`),
