@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiClient, resolveAssetUrl, type AuthUser, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, resolveAssetUrl, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BottomNav } from "../components/bottom-nav";
-import { Avatar } from "../components/ui";
+import { RegisterBookButton } from "../components/register-book-button";
 
 // 완독 기록의 한줄평에는 완독 처리 시 선택한 키워드가 #태그 줄로 함께 저장된다.
 // '나의 한줄' 섹션에서는 태그 줄을 걸러 실제 한줄평만 보여준다.
@@ -61,18 +61,6 @@ export default function HomePage() {
   const [completed, setCompleted] = useState<ReadingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    // 프로필은 헤더 아바타 용도라 실패해도 화면 진행에 영향 없다.
-    apiClient.getMyProfile().then(
-      (me) => { if (!cancelled) setProfile(me); },
-      () => {},
-    );
-    return () => { cancelled = true; };
-  }, [ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -103,18 +91,11 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-24 pt-8">
-      {/* 상단: 좌측 로고 + 우측 프로필 아바타 */}
+      {/* 상단: 좌측 로고 + 우측 책 등록 버튼 */}
       <div className="flex items-center justify-between">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="text42" width={200} style={{ width: 200 }} className="h-auto" />
-        <Link href="/my" aria-label="내정보 페이지">
-          <Avatar
-            nickname={profile?.nickname}
-            src={profile?.profileImageUrl}
-            color={profile?.profileColor ?? undefined}
-            size={34}
-          />
-        </Link>
+        <RegisterBookButton />
       </div>
 
       <h1 className="mt-1 text-3xl font-bold leading-snug text-gray-900">
