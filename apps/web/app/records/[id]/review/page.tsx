@@ -17,7 +17,6 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   const [endDate, setEndDate] = useState("");
   const [readAmount, setReadAmount] = useState<ReadAmount>("ALL");
@@ -68,10 +67,9 @@ export default function ReviewPage() {
     if (!record || !canSubmit) return;
     setSubmitting(true);
     setError(null);
-    setSavedMsg(null);
     try {
       // 완독 기록 재저장(수정). complete API는 상태 가드가 없어 그대로 덮어쓴다.
-      const updated = await apiClient.completeReadingRecord(record.id, {
+      await apiClient.completeReadingRecord(record.id, {
         endDate,
         rating: rating > 0 ? rating : undefined,
         oneLineNote: oneLineNote.trim(),
@@ -79,11 +77,10 @@ export default function ReviewPage() {
         genres: [],
         readAmount,
       });
-      setRecord(updated);
-      setSavedMsg("리뷰를 수정했어요.");
+      // 수정 후 북로그(완독책)로 돌아간다.
+      router.push("/shelf");
     } catch (e) {
       setError(e instanceof Error ? e.message : "리뷰 수정에 실패했어요.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -216,7 +213,6 @@ export default function ReviewPage() {
             className="mt-3 w-full resize-none rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:border-gray-900"
           />
 
-          {savedMsg && <p className="mt-4 text-center text-sm text-green-600">{savedMsg}</p>}
           {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
           {/* 하단 고정 버튼 */}
