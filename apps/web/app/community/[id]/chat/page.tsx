@@ -5,14 +5,37 @@ import { useParams, useRouter } from "next/navigation";
 import { apiClient, type MeetingChatMessage } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
+import { BubbleIcon, PaperPlaneIcon } from "../../../../components/icons";
 
 const POLL_MS = 4000;
+
+function sameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
 /** createdAt(ISO) → HH:MM */
 function formatTime(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const h = d.getHours();
+  const ampm = h < 12 ? "오전" : "오후";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${ampm} ${h12}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** 날짜 구분선 라벨: 오늘 / 어제 / YYYY년 M월 D일 */
+function dateLabel(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (sameDay(d, now)) return "오늘";
+  if (sameDay(d, yesterday)) return "어제";
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 export default function MeetingChatPage() {
@@ -111,58 +134,106 @@ export default function MeetingChatPage() {
   if (!ready) return null;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col bg-[#f6f8fb]">
+    <main className="mx-auto flex h-screen max-w-md flex-col bg-[#eef1f6]">
       {/* 헤더 */}
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200 bg-white px-5 py-3">
+      <header className="sticky top-0 z-10 flex items-center gap-1 border-b border-gray-200/80 bg-white/90 px-3 py-3 backdrop-blur">
         <button
           onClick={() => router.back()}
           aria-label="뒤로"
-          className="-ml-1 p-1 text-gray-900"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-900 transition-colors hover:bg-gray-100"
         >
-          <span aria-hidden className="text-2xl font-bold">‹</span>
+          <span aria-hidden className="text-2xl font-bold leading-none">‹</span>
         </button>
-        <h1 className="truncate text-lg font-bold text-gray-900">{title}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-base font-bold text-gray-900">{title}</h1>
+          <p className="text-[11px] text-gray-400">참여자 대화방</p>
+        </div>
       </header>
 
       {/* 메시지 목록 */}
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-5">
+      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
         {loading ? (
           <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
         ) : error ? (
           <p className="py-10 text-center text-sm text-red-600">{error}</p>
         ) : messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-400">
-            아직 대화가 없어요. 첫 메시지를 남겨보세요.
-          </p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <BubbleIcon size={56} className="text-gray-300" />
+            <p className="text-sm font-medium text-gray-400">
+              아직 대화가 없어요.
+              <br />
+              첫 메시지를 남겨보세요.
+            </p>
+          </div>
         ) : (
-          messages.map((m) =>
-            m.mine ? (
-              <div key={m.id} className="flex items-end justify-end gap-1.5">
-                <span className="mb-0.5 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
-                <p className="max-w-[72%] whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-gray-900 px-3.5 py-2 text-sm text-white">
-                  {m.content}
-                </p>
-              </div>
-            ) : (
-              <div key={m.id} className="flex items-start gap-2">
-                <Avatar
-                  nickname={m.senderNickname}
-                  src={m.senderProfileImageUrl}
-                  color={m.senderProfileColor ?? undefined}
-                  size={32}
-                />
-                <div className="min-w-0">
-                  <p className="mb-0.5 text-xs font-medium text-gray-500">{m.senderNickname}</p>
-                  <div className="flex items-end gap-1.5">
-                    <p className="max-w-[72%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm bg-white px-3.5 py-2 text-sm text-gray-900 shadow-sm">
+          messages.map((m, i) => {
+            const prev = messages[i - 1];
+            const next = messages[i + 1];
+            const d = new Date(m.createdAt);
+            const showDate = !prev || !sameDay(new Date(prev.createdAt), d);
+            const startOfGroup = showDate || !prev || prev.senderId !== m.senderId;
+            const endOfGroup =
+              !next ||
+              !sameDay(new Date(next.createdAt), d) ||
+              next.senderId !== m.senderId;
+
+            return (
+              <div key={m.id}>
+                {showDate && (
+                  <div className="my-4 flex justify-center">
+                    <span className="rounded-full bg-gray-900/5 px-3 py-1 text-[11px] font-medium text-gray-500">
+                      {dateLabel(m.createdAt)}
+                    </span>
+                  </div>
+                )}
+
+                {m.mine ? (
+                  <div className={`flex items-end justify-end gap-1.5 ${startOfGroup ? "mt-3" : "mt-0.5"}`}>
+                    {endOfGroup && (
+                      <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
+                    )}
+                    <p
+                      className={`max-w-[74%] whitespace-pre-wrap break-words bg-gray-900 px-3.5 py-2 text-sm leading-relaxed text-white ${
+                        startOfGroup ? "rounded-2xl rounded-tr-md" : "rounded-2xl"
+                      }`}
+                    >
                       {m.content}
                     </p>
-                    <span className="mb-0.5 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
                   </div>
-                </div>
+                ) : (
+                  <div className={`flex items-end gap-2 ${startOfGroup ? "mt-3" : "mt-0.5"}`}>
+                    <div className="w-8 shrink-0">
+                      {startOfGroup && (
+                        <Avatar
+                          nickname={m.senderNickname}
+                          src={m.senderProfileImageUrl}
+                          color={m.senderProfileColor ?? undefined}
+                          size={32}
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      {startOfGroup && (
+                        <p className="mb-1 ml-1 text-xs font-medium text-gray-500">{m.senderNickname}</p>
+                      )}
+                      <div className="flex items-end gap-1.5">
+                        <p
+                          className={`max-w-[74%] whitespace-pre-wrap break-words bg-white px-3.5 py-2 text-sm leading-relaxed text-gray-900 shadow-sm ${
+                            startOfGroup ? "rounded-2xl rounded-tl-md" : "rounded-2xl"
+                          }`}
+                        >
+                          {m.content}
+                        </p>
+                        {endOfGroup && (
+                          <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )
-          )
+            );
+          })
         )}
         <div ref={bottomRef} />
       </div>
@@ -171,20 +242,21 @@ export default function MeetingChatPage() {
       {!error && (
         <form
           onSubmit={handleSend}
-          className="sticky bottom-0 flex items-center gap-2 border-t border-gray-200 bg-white px-4 py-3"
+          className="sticky bottom-0 flex items-center gap-2 border-t border-gray-200/80 bg-white/95 px-3 py-3 backdrop-blur"
         >
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="메시지를 입력하세요"
-            className="flex-1 rounded-full border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-gray-900"
+            className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:bg-gray-50 focus:ring-2 focus:ring-gray-900/10"
           />
           <button
             type="submit"
+            aria-label="전송"
             disabled={!input.trim() || sending}
-            className="shrink-0 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white transition-colors hover:bg-black disabled:opacity-30"
           >
-            전송
+            <PaperPlaneIcon size={18} />
           </button>
         </form>
       )}
