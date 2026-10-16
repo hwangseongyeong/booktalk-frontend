@@ -156,7 +156,7 @@ export default function MeetingDetailPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-28 pt-8">
-      <header className="flex items-center">
+      <header className="flex items-center justify-between">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-2xl font-bold text-gray-900"
@@ -165,6 +165,32 @@ export default function MeetingDetailPage() {
           <span aria-hidden>‹</span>
           모임
         </button>
+        {meeting && meeting.status !== "CLOSED" && (meeting.isHost || meeting.joined) && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleInvite}
+              disabled={action !== null}
+              className="flex items-center gap-1 rounded-full bg-[#FEE500] px-3 py-1.5 text-xs font-bold text-[#191600] transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              <span aria-hidden>💬</span>
+              {action === "invite" ? "여는 중" : "초대"}
+            </button>
+            {meeting.joined && !meeting.isHost && (
+              <button
+                onClick={() =>
+                  run("leave", () => apiClient.leaveMeeting(meeting.id), {
+                    confirmMessage: "모임에서 나갈까요?",
+                    backOnDone: true,
+                  })
+                }
+                disabled={action !== null}
+                className="rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40"
+              >
+                {action === "leave" ? "처리 중" : "나가기"}
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       {loading ? (
@@ -173,6 +199,10 @@ export default function MeetingDetailPage() {
         <p className="py-16 text-center text-sm text-red-600">{error}</p>
       ) : meeting ? (
         <>
+          {actionError && (
+            <p className="mt-4 text-center text-sm text-red-600">{actionError}</p>
+          )}
+
           {/* 모임 요약 */}
           <section className="mt-6 flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <MeetingCover
@@ -219,24 +249,9 @@ export default function MeetingDetailPage() {
             </ul>
           </section>
 
-          {/* 하단 고정 액션 */}
+          {/* 하단 고정 액션 (초대·나가기는 상단으로 이동). 비호스트 참여자는 하단 액션이 없어 바를 숨긴다. */}
+          {!(meeting.status !== "CLOSED" && meeting.joined && !meeting.isHost) && (
           <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-6 pb-6 pt-3">
-            {actionError && (
-              <p className="mb-2 text-center text-sm text-red-600">{actionError}</p>
-            )}
-
-            {/* 초대: 참여 중인 사람(생성자 포함)이 모집/진행 중 모임에 친구를 부른다 */}
-            {meeting.status !== "CLOSED" && (meeting.isHost || meeting.joined) && (
-              <button
-                onClick={handleInvite}
-                disabled={action !== null}
-                className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#FEE500] py-4 text-base font-bold text-[#191600] transition-opacity hover:opacity-90 disabled:opacity-40"
-              >
-                <span aria-hidden>💬</span>
-                {action === "invite" ? "카카오톡 여는 중..." : "카카오톡으로 초대"}
-              </button>
-            )}
-
             {meeting.status === "CLOSED" ? (
               <p className="py-2 text-center text-sm text-gray-400">종료된 모임이에요.</p>
             ) : meeting.isHost ? (
@@ -282,20 +297,7 @@ export default function MeetingDetailPage() {
                   </button>
                 </div>
               </div>
-            ) : meeting.joined ? (
-              <button
-                onClick={() =>
-                  run("leave", () => apiClient.leaveMeeting(meeting.id), {
-                    confirmMessage: "모임에서 나갈까요?",
-                    backOnDone: true,
-                  })
-                }
-                disabled={action !== null}
-                className="w-full rounded-full border border-gray-300 bg-white py-4 text-base font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40"
-              >
-                {action === "leave" ? "처리 중..." : "모임 나가기"}
-              </button>
-            ) : meeting.visibility === "PRIVATE" ? (
+            ) : meeting.joined ? null : meeting.visibility === "PRIVATE" ? (
               <p className="py-2 text-center text-sm text-gray-400">
                 초대 링크로만 참여할 수 있는 모임이에요.
               </p>
@@ -311,6 +313,7 @@ export default function MeetingDetailPage() {
               <p className="py-2 text-center text-sm text-gray-400">정원이 가득 찼어요.</p>
             )}
           </div>
+          )}
         </>
       ) : null}
     </main>
