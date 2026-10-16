@@ -115,12 +115,6 @@ export default function HomePage() {
         ) : reading.length === 0 ? (
           <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white py-10 text-center shadow-sm">
             <p className="text-sm text-gray-400">지금 읽고 있는 책이 없어요.</p>
-            <Link
-              href="/books"
-              className="rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white"
-            >
-              + 책 등록
-            </Link>
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-4">

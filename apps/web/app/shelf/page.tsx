@@ -49,22 +49,19 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
 // ---------- 탭별 빈 상태 ----------
 const EMPTY_CONFIG: Record<
   ShelfTab,
-  { title: string; subtitle: [string, string]; buttonLabel: string }
+  { title: string; subtitle: [string, string] }
 > = {
   "완독책": {
     title: "아직 완독책이 없어요",
     subtitle: ["완독한 책을 등록하면", "나만의 독서 기록이 쌓여요"],
-    buttonLabel: "+ 책 등록",
   },
   "독서중": {
     title: "아직 독서중인 책이 없어요",
     subtitle: ["요즘 펼친 책을 등록하고", "오늘의 독서를 기록해보세요"],
-    buttonLabel: "+ 책 추가",
   },
   "담아둔책": {
     title: "아직 담아둔 책이 없어요",
     subtitle: ["읽고 싶은 책을 미리 담아두면", "다음에 뭘 읽을지 고민이 줄어들어요"],
-    buttonLabel: "+ 책 등록",
   },
 };
 
@@ -359,25 +356,6 @@ export default function ShelfPage() {
               startingKey={startingKey}
             />
           </>
-        )}
-
-        {/* 하단 책 추가 진입점.
-            빈 상태: 전체 너비 버튼(탭별 라벨). 책 있음: 기본 등록 버튼. */}
-        {!loading && !loadError && !hasBooks && (
-          <Link
-            href="/books"
-            className="mt-4 flex justify-center rounded-full bg-gray-900 px-6 py-3.5 text-sm font-medium text-white"
-          >
-            {EMPTY_CONFIG[tab].buttonLabel}
-          </Link>
-        )}
-        {!loading && !loadError && hasBooks && (
-          <Link
-            href="/books"
-            className="mt-4 flex justify-center rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
-          >
-            + 책 등록
-          </Link>
         )}
       </div>
 

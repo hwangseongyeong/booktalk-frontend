@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, authStorage, resolveAssetUrl, type ReadingRecord } from "@booktalk/api-client";
@@ -354,12 +353,6 @@ export default function BookBoxPage() {
         ) : books.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <p className="text-sm text-gray-400">이 달에 완독한 책이 없어요.</p>
-            <Link
-              href="/books"
-              className="rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white"
-            >
-              + 책 검색
-            </Link>
           </div>
         ) : viewMode === "가로" ? (
           <SpreadView books={books} />
