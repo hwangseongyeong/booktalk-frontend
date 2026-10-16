@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiClient, type MeetingDetail, type MeetingMember } from "@booktalk/api-client";
@@ -236,6 +237,17 @@ export default function MeetingDetailPage() {
               </p>
             </div>
           </section>
+
+          {/* 대화방 — 참여자(host 포함)만 입장 */}
+          {(meeting.isHost || meeting.joined) && (
+            <Link
+              href={`/community/${meeting.id}/chat`}
+              className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-gray-900 shadow-sm transition-colors hover:bg-gray-50"
+            >
+              <span aria-hidden>💬</span>
+              대화방 입장
+            </Link>
+          )}
 
           {/* 참여자 */}
           <section className="mt-6">

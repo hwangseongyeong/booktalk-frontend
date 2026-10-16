@@ -135,6 +135,18 @@ export type MeetingDetail = Meeting & {
   inviteToken: string | null;
 };
 
+/** 모임 채팅 메시지. mine=true면 내가 보낸 메시지. */
+export type MeetingChatMessage = {
+  id: number;
+  senderId: number;
+  senderNickname: string;
+  senderProfileImageUrl: string | null;
+  senderProfileColor: string | null;
+  content: string;
+  createdAt: string;
+  mine: boolean;
+};
+
 export type CreateMeetingPayload = {
   readingMode: ReadingMode;
   bookId: number;
@@ -420,4 +432,18 @@ export const apiClient = {
   /** 모임 종료(생성자) */
   closeMeeting: (id: number) =>
     request<Meeting>(`/meetings/${id}/close`, { method: "POST" }),
+
+  // ---------- 모임 채팅 ----------
+  /** 모임 메시지 목록. afterId가 있으면 그 이후 새 메시지만(폴링) */
+  getMeetingMessages: (id: number, afterId?: number) =>
+    request<MeetingChatMessage[]>(
+      `/meetings/${id}/messages${afterId != null ? `?afterId=${afterId}` : ""}`
+    ),
+
+  /** 메시지 전송 */
+  sendMeetingMessage: (id: number, content: string) =>
+    request<MeetingChatMessage>(`/meetings/${id}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }),
 };
