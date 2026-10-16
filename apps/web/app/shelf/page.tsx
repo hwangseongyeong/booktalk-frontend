@@ -364,7 +364,13 @@ export default function ShelfPage() {
             )}
             <BookGrid
               books={activeBooks}
-              buildHref={tab === "완독책" ? (key) => `/records/${key}/review` : undefined}
+              buildHref={
+                tab === "완독책"
+                  ? (key) => `/records/${key}/review`
+                  : tab === "독서중"
+                    ? (key) => `/records/${key}/complete`
+                    : undefined
+              }
               showComplete={tab === "독서중"}
               onCancel={tab === "독서중" ? handleCancelReading : undefined}
               cancelingKey={cancelingKey}
