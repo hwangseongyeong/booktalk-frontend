@@ -3,20 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, type Meeting, type MeetingStatus } from "@booktalk/api-client";
+import { apiClient, type Meeting } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { formatDday } from "../../lib/meetings";
 import { BottomNav } from "../../components/bottom-nav";
 import { BellIcon, PlusIcon } from "../../components/icons";
 import { ReadingModeBadge, MeetingCover } from "../../components/community";
-
-type FilterKey = "RECRUITING" | "ONGOING" | "ALL";
-
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "RECRUITING", label: "모집 중" },
-  { key: "ONGOING", label: "진행 중" },
-  { key: "ALL", label: "전체" },
-];
 
 /** 상단 '참여 중인 모임' 가로 스크롤 카드 */
 function JoinedCard({ meeting }: { meeting: Meeting }) {
@@ -71,7 +63,6 @@ function MeetingListCard({ meeting }: { meeting: Meeting }) {
 export default function CommunityPage() {
   const ready = useRequireAuth();
   const router = useRouter();
-  const [filter, setFilter] = useState<FilterKey>("RECRUITING");
   const [joined, setJoined] = useState<Meeting[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,16 +79,15 @@ export default function CommunityPage() {
     return () => { cancelled = true; };
   }, [ready]);
 
-  // 목록은 필터가 바뀔 때마다 다시 불러온다.
+  // 전체 모임 목록을 불러온다.
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    const status: MeetingStatus | undefined = filter === "ALL" ? undefined : filter;
     apiClient
-      .getMeetings(status)
+      .getMeetings()
       .then((list) => { if (!cancelled) setMeetings(list); })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : "모임을 불러오지 못했어요.");
@@ -105,7 +95,7 @@ export default function CommunityPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [ready, filter]);
+  }, [ready]);
 
   if (!ready) return null;
 
@@ -140,28 +130,8 @@ export default function CommunityPage() {
         )}
       </section>
 
-      {/* 필터 탭 */}
-      <div className="mt-7 flex gap-2">
-        {FILTERS.map(({ key, label }) => {
-          const active = filter === key;
-          return (
-            <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`rounded-full px-5 py-2.5 text-sm font-bold transition-colors ${
-                active
-                  ? "bg-gray-900 text-white"
-                  : "border border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* 모임 목록 */}
-      <section className="mt-5 flex flex-col gap-4">
+      <section className="mt-7 flex flex-col gap-4">
         {loading ? (
           <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
         ) : error ? (
