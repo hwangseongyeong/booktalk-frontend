@@ -134,9 +134,9 @@ export default function MeetingChatPage() {
     });
   }
 
-  // 메시지에 이모지 리액션 토글. 응답으로 온 집계 결과로 해당 메시지를 갱신한다.
+  // 메시지에 이모지 리액션 토글(이모지별 독립). 응답으로 온 집계 결과로 해당 메시지를 갱신한다.
+  // 여러 이모지를 연속으로 달 수 있도록 선택해도 피커를 닫지 않는다(닫기는 🙂 버튼으로).
   async function handleReact(messageId: number, emoji: string) {
-    setReactingTo(null);
     try {
       const updated = await apiClient.reactToMeetingMessage(meetingId, messageId, emoji);
       updateMessage(updated);
@@ -377,6 +377,15 @@ export default function MeetingChatPage() {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* 리액션 피커 바깥 탭 시 닫기 */}
+      {reactingTo !== null && (
+        <div
+          className="fixed inset-0 z-[5]"
+          aria-hidden
+          onClick={() => setReactingTo(null)}
+        />
+      )}
 
       {/* 입력 바 */}
       {!error && (
