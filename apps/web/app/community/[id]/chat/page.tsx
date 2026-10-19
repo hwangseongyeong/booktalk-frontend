@@ -1,18 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   apiClient,
+  authStorage,
+  meetingChatSocketUrl,
   type MeetingChatMessage,
   type MeetingChatReaction,
-  type MeetingChatReactionsResponse,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
 import { BubbleIcon, PaperPlaneIcon } from "../../../../components/icons";
 
-const POLL_MS = 4000;
+// JWT access token의 sub(=내 userId)를 디코드한다. 실패 시 null → mine은 서버 값/false로 폴백.
+function decodeUserId(token: string | null): string | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const obj = JSON.parse(json) as { sub?: string | number };
+    return obj.sub != null ? String(obj.sub) : null;
+  } catch {
+    return null;
+  }
+}
+
+// WebSocket으로 받는 리액션 이벤트의 이모지별 userId 목록
+type ReactionEventEntry = { emoji: string; userIds: number[] };
 
 // 간단한 이모지 팔레트 (별도 라이브러리 없이 기본 유니코드 이모지 사용)
 const EMOJIS = [
@@ -70,6 +85,12 @@ export default function MeetingChatPage() {
   const params = useParams<{ id: string }>();
   const meetingId = Number(params.id);
 
+  // 내 userId(JWT에서 디코드). 브로드캐스트 메시지/리액션의 mine을 직접 계산하는 데 쓴다.
+  const myId = useMemo(
+    () => (typeof window === "undefined" ? null : decodeUserId(authStorage.getAccessToken())),
+    [],
+  );
+
   const [title, setTitle] = useState("대화방");
   const [messages, setMessages] = useState<MeetingChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -101,11 +122,20 @@ export default function MeetingChatPage() {
     });
   }
 
+  // 브로드캐스트/로드된 메시지의 mine을 내 userId 기준으로 정규화한다(브로드캐스트엔 수신자별 mine이 없음).
+  function withMine(m: MeetingChatMessage): MeetingChatMessage {
+    if (myId == null) return m;
+    const mine = String(m.senderId) === myId;
+    return mine === m.mine ? m : { ...m, mine };
+  }
+
   function appendMessages(incoming: MeetingChatMessage[]) {
     if (incoming.length === 0) return;
     setMessages((prev) => {
       const seen = new Set(prev.map((m) => m.id));
-      const merged = [...prev, ...incoming.filter((m) => !seen.has(m.id))];
+      const added = incoming.filter((m) => !seen.has(m.id)).map(withMine);
+      if (added.length === 0) return prev;
+      const merged = [...prev, ...added];
       const last = merged[merged.length - 1];
       if (last) lastIdRef.current = last.id;
       return merged;
@@ -117,24 +147,20 @@ export default function MeetingChatPage() {
     setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   }
 
-  // 폴링으로 받은 최근 윈도우 리액션을 기존 메시지에 병합한다.
-  // fromMessageId 이상인 메시지만 갱신/비우고(목록에 없으면 취소된 것), 그보다 오래된 메시지는
-  // 마지막 값을 유지한다(윈도우 밖 리액션을 실수로 지우지 않도록).
-  // 실제 변경이 없으면 같은 배열 참조를 유지해 리렌더/스크롤을 막는다.
-  function applyReactions(resp: MeetingChatReactionsResponse) {
-    const { fromMessageId, messages: list } = resp;
-    const byId = new Map(list.map((r) => [r.messageId, r.reactions]));
-    setMessages((prev) => {
-      let changed = false;
-      const next = prev.map((m) => {
-        if (m.id < fromMessageId) return m; // 윈도우 밖은 건드리지 않음
-        const incoming = byId.get(m.id) ?? [];
-        if (sameReactions(m.reactions, incoming)) return m;
-        changed = true;
-        return { ...m, reactions: incoming };
-      });
-      return changed ? next : prev;
-    });
+  // WebSocket 리액션 이벤트를 해당 메시지에 반영한다.
+  // 서버는 이모지별 userId 목록을 보내고, count/mine은 내 userId로 여기서 계산한다.
+  function applyReactionEvent(messageId: number, entries: ReactionEventEntry[]) {
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const reactions: MeetingChatReaction[] = entries.map((e) => ({
+          emoji: e.emoji,
+          count: e.userIds.length,
+          mine: myId != null && e.userIds.some((uid) => String(uid) === myId),
+        }));
+        return sameReactions(m.reactions, reactions) ? m : { ...m, reactions };
+      }),
+    );
   }
 
   // 메시지에 이모지 리액션 토글(이모지별 독립). 응답으로 온 집계 결과로 해당 메시지를 갱신한다.
@@ -169,7 +195,7 @@ export default function MeetingChatPage() {
       .getMeetingMessages(meetingId)
       .then((list) => {
         if (cancelled) return;
-        setMessages(list);
+        setMessages(list.map(withMine));
         const last = list[list.length - 1];
         if (last) lastIdRef.current = last.id;
       })
@@ -180,20 +206,71 @@ export default function MeetingChatPage() {
     return () => { cancelled = true; };
   }, [ready, meetingId]);
 
-  // 폴링: 새 메시지(afterId 이후)와 기존 메시지의 리액션 변경분을 함께 가져온다.
+  // 실시간 수신: WebSocket으로 새 메시지/리액션을 push 받는다(폴링 대체).
+  // 전송·리액션은 기존 REST로 하고, 서버가 저장 후 참여자 전원에게 브로드캐스트한다.
   useEffect(() => {
     if (!ready || error) return;
-    const timer = setInterval(() => {
-      apiClient
-        .getMeetingMessages(meetingId, lastIdRef.current || undefined)
-        .then((list) => appendMessages(list))
-        .catch(() => {});
-      apiClient
-        .getMeetingMessageReactions(meetingId)
-        .then((list) => applyReactions(list))
-        .catch(() => {});
-    }, POLL_MS);
-    return () => clearInterval(timer);
+    if (!authStorage.getAccessToken()) return;
+
+    let closed = false;
+    let ws: WebSocket | null = null;
+    let retry = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function scheduleReconnect() {
+      if (closed) return;
+      retry += 1;
+      const delay = Math.min(1000 * 2 ** retry, 15000);
+      reconnectTimer = setTimeout(connect, delay);
+    }
+
+    function connect() {
+      // 재연결마다 최신 토큰을 읽는다(세션 중 토큰이 갱신돼도 핸드셰이크가 통과하도록).
+      const token = authStorage.getAccessToken();
+      if (!token) {
+        scheduleReconnect();
+        return;
+      }
+      ws = new WebSocket(meetingChatSocketUrl(meetingId, token));
+
+      ws.onopen = () => {
+        retry = 0;
+        // (재)연결 시 끊긴 동안 놓친 메시지를 afterId로 보충한다.
+        apiClient
+          .getMeetingMessages(meetingId, lastIdRef.current || undefined)
+          .then((list) => appendMessages(list))
+          .catch(() => {});
+      };
+
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.type === "MESSAGE" && data.message) {
+            appendMessages([data.message as MeetingChatMessage]);
+          } else if (data.type === "REACTION" && typeof data.messageId === "number") {
+            applyReactionEvent(data.messageId, (data.reactions ?? []) as ReactionEventEntry[]);
+          }
+        } catch {
+          // 파싱 실패 메시지는 무시
+        }
+      };
+
+      ws.onclose = () => {
+        scheduleReconnect(); // 지수 백오프로 재연결(최대 15초)
+      };
+
+      ws.onerror = () => {
+        ws?.close(); // onclose로 이어져 재연결 로직을 탄다
+      };
+    }
+
+    connect();
+
+    return () => {
+      closed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      ws?.close();
+    };
   }, [ready, error, meetingId]);
 
   // 새 메시지가 오면 맨 아래로 스크롤. 리액션만 바뀐 경우(길이 동일)는 스크롤하지 않는다.

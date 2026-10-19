@@ -11,6 +11,15 @@ const API_ORIGIN = (() => {
 })();
 
 /**
+ * 모임 채팅 WebSocket URL. API origin의 http→ws로 바꿔 /ws/chat 에 연결한다.
+ * 핸드셰이크에서 token(access token)과 meetingId로 인증/참여 검증을 한다.
+ */
+export function meetingChatSocketUrl(meetingId: number, token: string): string {
+  const wsOrigin = API_ORIGIN.replace(/^http/, "ws"); // http→ws, https→wss
+  return `${wsOrigin}/ws/chat?meetingId=${meetingId}&token=${encodeURIComponent(token)}`;
+}
+
+/**
  * 백엔드가 내려주는 이미지 URL을 <img src> 에 바로 쓸 수 있는 절대 URL로 바꾼다.
  * - 외부 절대 URL(표지: http...)·data URL 은 그대로 둔다.
  * - '/api/v1/...' 같은 상대 경로(책등 SVG: /api/v1/books/{id}/spine.svg)는 API origin을 붙인다.
