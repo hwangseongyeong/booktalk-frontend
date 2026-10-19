@@ -234,22 +234,26 @@ export type TokenPersistenceAdapter = {
   clear(): void | Promise<void>;
 };
 
-// 기본 어댑터: 웹 localStorage. SSR/비브라우저 환경에선 no-op.
+// 기본 어댑터: 웹 localStorage. SSR 및 localStorage가 없는 환경(React Native 등)에선 no-op.
+// RN은 window는 있지만 window.localStorage가 없으므로 존재 여부까지 확인한다.
+const hasLocalStorage = () =>
+  typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+
 const localStorageAdapter: TokenPersistenceAdapter = {
   load() {
-    if (typeof window === "undefined") return { accessToken: null, refreshToken: null };
+    if (!hasLocalStorage()) return { accessToken: null, refreshToken: null };
     return {
       accessToken: window.localStorage.getItem(ACCESS_TOKEN_KEY),
       refreshToken: window.localStorage.getItem(REFRESH_TOKEN_KEY),
     };
   },
   save(accessToken, refreshToken) {
-    if (typeof window === "undefined") return;
+    if (!hasLocalStorage()) return;
     window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   },
   clear() {
-    if (typeof window === "undefined") return;
+    if (!hasLocalStorage()) return;
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_KEY);
   },

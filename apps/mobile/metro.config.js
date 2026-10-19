@@ -12,12 +12,10 @@ const config = getDefaultConfig(projectRoot);
 config.watchFolders = [workspaceRoot];
 
 // 2) 루트/앱 node_modules 모두에서 모듈을 찾는다
+//    (호이스팅 설치라 공유 의존성은 루트 node_modules에 있음 — 상위 탐색은 끄지 않는다)
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),
 ];
-
-// 3) 상위 디렉터리 탐색 비활성화(중복 해석 방지)
-config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;
