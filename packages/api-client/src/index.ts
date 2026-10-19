@@ -142,6 +142,12 @@ export type MeetingChatReaction = {
   mine: boolean;
 };
 
+/** 메시지별 리액션 집계(폴링으로 기존 메시지 변경분 반영용). */
+export type MeetingChatMessageReactions = {
+  messageId: number;
+  reactions: MeetingChatReaction[];
+};
+
 /** 모임 채팅 메시지. mine=true면 내가 보낸 메시지. */
 export type MeetingChatMessage = {
   id: number;
@@ -454,6 +460,10 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify({ content }),
     }),
+
+  /** 모임 전체 메시지의 리액션 집계(폴링용). 목록에 없는 메시지는 리액션 없음 */
+  getMeetingMessageReactions: (id: number) =>
+    request<MeetingChatMessageReactions[]>(`/meetings/${id}/messages/reactions`),
 
   /** 메시지 이모지 리액션 토글(추가/교체/취소). 갱신된 메시지를 반환 */
   reactToMeetingMessage: (id: number, messageId: number, emoji: string) =>

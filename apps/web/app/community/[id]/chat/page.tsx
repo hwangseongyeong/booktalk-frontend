@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiClient, type MeetingChatMessage } from "@booktalk/api-client";
+import {
+  apiClient,
+  type MeetingChatMessage,
+  type MeetingChatMessageReactions,
+  type MeetingChatReaction,
+} from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
 import { BubbleIcon, PaperPlaneIcon } from "../../../../components/icons";
@@ -18,6 +23,17 @@ const EMOJIS = [
 
 // 메시지 리액션용 고정 이모지 (백엔드 ALLOWED_REACTIONS와 동일하게 유지)
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
+
+// 두 리액션 배열이 동일한지(폴링 시 불필요한 리렌더/스크롤 방지용)
+function sameReactions(a: MeetingChatReaction[], b: MeetingChatReaction[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].emoji !== b[i].emoji || a[i].count !== b[i].count || a[i].mine !== b[i].mine) {
+      return false;
+    }
+  }
+  return true;
+}
 
 function sameDay(a: Date, b: Date) {
   return (
@@ -101,6 +117,23 @@ export default function MeetingChatPage() {
     setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   }
 
+  // 폴링으로 받은 모임 전체 리액션을 기존 메시지에 병합한다.
+  // 응답 목록에 없는 메시지는 리액션이 모두 취소된 것으로 보고 비운다.
+  // 실제 변경이 없으면 같은 배열 참조를 유지해 리렌더/스크롤을 막는다.
+  function applyReactions(list: MeetingChatMessageReactions[]) {
+    const byId = new Map(list.map((r) => [r.messageId, r.reactions]));
+    setMessages((prev) => {
+      let changed = false;
+      const next = prev.map((m) => {
+        const incoming = byId.get(m.id) ?? [];
+        if (sameReactions(m.reactions, incoming)) return m;
+        changed = true;
+        return { ...m, reactions: incoming };
+      });
+      return changed ? next : prev;
+    });
+  }
+
   // 메시지에 이모지 리액션 토글. 응답으로 온 집계 결과로 해당 메시지를 갱신한다.
   async function handleReact(messageId: number, emoji: string) {
     setReactingTo(null);
@@ -144,7 +177,7 @@ export default function MeetingChatPage() {
     return () => { cancelled = true; };
   }, [ready, meetingId]);
 
-  // 폴링: afterId 이후의 새 메시지만 가져온다.
+  // 폴링: 새 메시지(afterId 이후)와 기존 메시지의 리액션 변경분을 함께 가져온다.
   useEffect(() => {
     if (!ready || error) return;
     const timer = setInterval(() => {
@@ -152,14 +185,20 @@ export default function MeetingChatPage() {
         .getMeetingMessages(meetingId, lastIdRef.current || undefined)
         .then((list) => appendMessages(list))
         .catch(() => {});
+      apiClient
+        .getMeetingMessageReactions(meetingId)
+        .then((list) => applyReactions(list))
+        .catch(() => {});
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [ready, error, meetingId]);
 
-  // 새 메시지가 오면 맨 아래로 스크롤
+  // 새 메시지가 오면 맨 아래로 스크롤. 리액션만 바뀐 경우(길이 동일)는 스크롤하지 않는다.
+  const messageCount = messages.length;
+  const lastMessageId = messages[messages.length - 1]?.id;
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messageCount, lastMessageId]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
