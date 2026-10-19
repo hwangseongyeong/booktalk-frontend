@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import {
   apiClient,
   type MeetingChatMessage,
-  type MeetingChatMessageReactions,
   type MeetingChatReaction,
+  type MeetingChatReactionsResponse,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
@@ -117,14 +117,17 @@ export default function MeetingChatPage() {
     setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
   }
 
-  // 폴링으로 받은 모임 전체 리액션을 기존 메시지에 병합한다.
-  // 응답 목록에 없는 메시지는 리액션이 모두 취소된 것으로 보고 비운다.
+  // 폴링으로 받은 최근 윈도우 리액션을 기존 메시지에 병합한다.
+  // fromMessageId 이상인 메시지만 갱신/비우고(목록에 없으면 취소된 것), 그보다 오래된 메시지는
+  // 마지막 값을 유지한다(윈도우 밖 리액션을 실수로 지우지 않도록).
   // 실제 변경이 없으면 같은 배열 참조를 유지해 리렌더/스크롤을 막는다.
-  function applyReactions(list: MeetingChatMessageReactions[]) {
+  function applyReactions(resp: MeetingChatReactionsResponse) {
+    const { fromMessageId, messages: list } = resp;
     const byId = new Map(list.map((r) => [r.messageId, r.reactions]));
     setMessages((prev) => {
       let changed = false;
       const next = prev.map((m) => {
+        if (m.id < fromMessageId) return m; // 윈도우 밖은 건드리지 않음
         const incoming = byId.get(m.id) ?? [];
         if (sameReactions(m.reactions, incoming)) return m;
         changed = true;
