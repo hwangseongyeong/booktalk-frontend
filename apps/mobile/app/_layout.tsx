@@ -3,6 +3,7 @@ import "react-native-url-polyfill/auto";
 
 import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
+import { initializeKakaoSDK } from "@react-native-kakao/core";
 import { configureTokenStorage, hydrateAuth } from "@booktalk/api-client";
 import { secureTokenStorage } from "../lib/tokenStorage";
 
@@ -13,6 +14,16 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // 카카오 네이티브 SDK 초기화(네이티브 앱 키 필요, dev build에서만 실제 동작).
+    const kakaoKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
+    if (kakaoKey) {
+      try {
+        initializeKakaoSDK(kakaoKey);
+      } catch (e) {
+        // Expo Go 등 네이티브 모듈이 없는 환경에서는 조용히 넘어간다.
+        console.warn("Kakao SDK init skipped:", e);
+      }
+    }
     // 저장된 토큰을 메모리 캐시로 끌어온 뒤 화면을 렌더한다.
     hydrateAuth().finally(() => setReady(true));
   }, []);

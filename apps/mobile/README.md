@@ -26,8 +26,39 @@ pnpm --filter mobile start
 
 > 버전 정렬이 필요하면 `cd apps/mobile && npx expo install --fix` 로 Expo SDK에 맞춰 조정한다.
 
+## 카카오 로그인 (네이티브 SDK — dev build 필요)
+네이티브 카카오 SDK를 쓰므로 **Expo Go로는 안 되고 개발 빌드(dev build)** 가 필요하다.
+흐름: 앱에서 카카오 로그인 → 카카오 access token → 백엔드 `POST /auth/kakao/login/token` → BookTalk JWT → SecureStore 저장.
+
+**1) 카카오 개발자 콘솔** (https://developers.kakao.com)
+- 애플리케이션 생성 → **네이티브 앱 키** 복사
+- 플랫폼 등록: Android 패키지명 `com.booktalk.app`, iOS 번들 ID `com.booktalk.app`
+  - Android는 키 해시 등록 필요(`eas credentials` 또는 keytool로 추출)
+- 카카오 로그인 **활성화 ON**, 동의항목에서 닉네임/프로필/이메일 설정
+
+**2) 앱 설정**
+```bash
+# 의존성 설치(카카오 SDK 포함)
+pnpm install
+# (버전 정렬 필요 시) cd apps/mobile && npx expo install @react-native-kakao/core @react-native-kakao/user
+
+# .env 에 네이티브 앱 키 입력
+#   EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY=카카오_네이티브_앱_키
+```
+
+**3) 개발 빌드 생성·실행** (Expo Go 아님)
+```bash
+cd apps/mobile
+npx expo prebuild --clean          # 네이티브 프로젝트 생성(app.config.js의 카카오 플러그인 적용)
+npx expo run:android               # 또는 npx expo run:ios  (로컬 빌드)
+#   클라우드 빌드는: eas build --profile development -p android|ios  →  설치 후 npx expo start --dev-client
+```
+빌드된 앱에서 "카카오로 시작하기" → 로그인 → 홈("...님 환영합니다")으로 이동하면 성공.
+
+> 백엔드는 이미 `POST /api/v1/auth/kakao/login/token`(accessToken 수신) 준비됨. 카카오 콘솔의 `oauth2.kakao.client-id`(REST 키)와 별개로, 모바일은 **네이티브 앱 키 + 유저정보 조회 토큰**만 쓴다.
+
 ## 다음 작업(이식 순서)
-1. 소셜 로그인(`expo-auth-session` + 딥링크, 각 provider 콘솔에 모바일 리다이렉트 등록)
+1. ✅ 카카오 로그인(네이티브 SDK) — 위 참고
 2. 핵심 화면: 서재/독서기록/책검색 (책등 SVG는 `react-native-svg`의 `SvgUri`로 렌더)
 3. 커뮤니티/채팅 (RN 내장 WebSocket으로 `/ws/chat` 재사용)
 4. EAS 빌드·스토어 배포 (`eas build` / `eas submit`)

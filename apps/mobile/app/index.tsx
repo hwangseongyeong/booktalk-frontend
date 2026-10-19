@@ -1,30 +1,42 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { apiClient, authStorage } from "@booktalk/api-client";
 
 /**
- * 스캐폴드 확인용 홈 화면.
- * 공유 패키지(@booktalk/api-client)가 모바일에서 정상 연결되는지 보여준다.
+ * 홈(스캐폴드). 로그인 안 돼 있으면 /login으로 보낸다.
  * 실제 화면(서재/기록/커뮤니티)은 이후 단계에서 RN 컴포넌트로 이식한다.
  */
 export default function Home() {
-  const [status, setStatus] = useState<string>("백엔드 연결 확인 중...");
+  const [status, setStatus] = useState("백엔드 연결 확인 중...");
+  const loggedIn = authStorage.getAccessToken() != null;
 
   useEffect(() => {
-    // 공개 엔드포인트로 연결 확인(인증 불필요). 실패해도 앱은 동작.
+    if (!loggedIn) {
+      router.replace("/login");
+      return;
+    }
+    // 로그인 사용자 정보로 연결 확인
     apiClient
-      .searchBooks("해리포터")
-      .then((books) => setStatus(`백엔드 연결 OK · 검색 결과 ${books.length}건`))
-      .catch((e) => setStatus(`백엔드 연결 실패: ${e instanceof Error ? e.message : "오류"}`));
-  }, []);
+      .getMe()
+      .then((me) => setStatus(`${me.nickname}님 환영합니다 · 백엔드 연결 OK`))
+      .catch((e) => setStatus(`연결 실패: ${e instanceof Error ? e.message : "오류"}`));
+  }, [loggedIn]);
 
-  const loggedIn = authStorage.getAccessToken() != null;
+  if (!loggedIn) return null;
+
+  async function handleLogout() {
+    apiClient.logout();
+    router.replace("/login");
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>BookTalk Mobile</Text>
-      <Text style={styles.badge}>{loggedIn ? "로그인됨" : "로그인 필요"}</Text>
       <Text style={styles.status}>{status}</Text>
+      <TouchableOpacity style={styles.logout} onPress={handleLogout}>
+        <Text style={styles.logoutText}>로그아웃</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -39,6 +51,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: { fontSize: 24, fontWeight: "700", color: "#111827" },
-  badge: { fontSize: 13, color: "#6b7280" },
   status: { fontSize: 13, color: "#374151", textAlign: "center" },
+  logout: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: "#111827",
+  },
+  logoutText: { color: "#fff", fontSize: 14, fontWeight: "600" },
 });

@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@booktalk/api-client": "workspace:*",
+    "@react-native-kakao/core": "^2.3.1",
+    "@react-native-kakao/user": "^2.3.1",
     "expo": "~51.0.0",
     "expo-constants": "~16.0.0",
     "expo-linking": "~6.3.0",

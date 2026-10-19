@@ -394,6 +394,13 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
+  /** 네이티브 카카오 SDK 로그인(모바일). 앱에서 받은 카카오 access token으로 로그인한다. */
+  loginWithKakaoToken: (accessToken: string) =>
+    request<TokenPair>(`/auth/kakao/login/token`, {
+      method: "POST",
+      body: JSON.stringify({ accessToken }),
+    }),
+
   getMe: () => request<AuthUser>("/auth/me"),
 
   logout: () => {
