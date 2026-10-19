@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "BookTalk",
+    "slug": "booktalk",
+    "scheme": "booktalk",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.booktalk.app"
+    },
+    "android": {
+      "package": "com.booktalk.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

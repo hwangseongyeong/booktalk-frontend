@@ -1,5 +1,9 @@
 // TODO: 백엔드 Swagger 스펙이 안정화되면 openapi-typescript로 자동 생성된 타입으로 교체
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
+// 웹(Next)은 NEXT_PUBLIC_*, 모바일(Expo)은 EXPO_PUBLIC_* 를 빌드 시 인라인한다. 둘 다 지원.
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  "http://localhost:8080/api/v1";
 
 /** API 서버 origin(예: http://localhost:8080). 상대 경로 애셋(책등 SVG 등) 해석용. */
 const API_ORIGIN = (() => {
@@ -212,28 +216,86 @@ export type TokenPair = {
   user: AuthUser;
 };
 
-// ---------- 토큰 저장(localStorage) ----------
+// ---------- 토큰 저장 (플랫폼 주입식) ----------
+// 웹은 localStorage(동기), 모바일은 expo-secure-store/AsyncStorage(비동기)를 주입한다.
+// 동기 읽기 API(getAccessToken 등)는 메모리 캐시로 처리하고, 영속화만 어댑터에 위임한다.
 const ACCESS_TOKEN_KEY = "booktalk_access_token";
 const REFRESH_TOKEN_KEY = "booktalk_refresh_token";
 
-export const authStorage = {
-  getAccessToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+export type PersistedTokens = { accessToken: string | null; refreshToken: string | null };
+
+/**
+ * 토큰 영속화 어댑터. 비동기 저장소도 지원하도록 load는 Promise를 반환할 수 있다.
+ * 모바일에서는 configureTokenStorage()로 주입하고, 앱 시작 시 hydrateAuth()를 1회 await 한다.
+ */
+export type TokenPersistenceAdapter = {
+  load(): PersistedTokens | Promise<PersistedTokens>;
+  save(accessToken: string, refreshToken: string): void | Promise<void>;
+  clear(): void | Promise<void>;
+};
+
+// 기본 어댑터: 웹 localStorage. SSR/비브라우저 환경에선 no-op.
+const localStorageAdapter: TokenPersistenceAdapter = {
+  load() {
+    if (typeof window === "undefined") return { accessToken: null, refreshToken: null };
+    return {
+      accessToken: window.localStorage.getItem(ACCESS_TOKEN_KEY),
+      refreshToken: window.localStorage.getItem(REFRESH_TOKEN_KEY),
+    };
   },
-  getRefreshToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(REFRESH_TOKEN_KEY);
-  },
-  setTokens(accessToken: string, refreshToken: string) {
+  save(accessToken, refreshToken) {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   },
-  clearTokens() {
+  clear() {
     if (typeof window === "undefined") return;
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  },
+};
+
+let persistence: TokenPersistenceAdapter = localStorageAdapter;
+let memAccessToken: string | null = null;
+let memRefreshToken: string | null = null;
+
+// 기본(동기) 어댑터는 모듈 로드 시 즉시 하이드레이트한다(웹은 기존 동작 그대로).
+(() => {
+  const loaded = localStorageAdapter.load();
+  if (!(loaded instanceof Promise)) {
+    memAccessToken = loaded.accessToken;
+    memRefreshToken = loaded.refreshToken;
+  }
+})();
+
+/** 플랫폼별 토큰 저장소 주입(모바일: expo-secure-store 등). 주입 후 hydrateAuth()를 호출한다. */
+export function configureTokenStorage(adapter: TokenPersistenceAdapter) {
+  persistence = adapter;
+}
+
+/** 저장된 토큰을 메모리 캐시로 끌어온다(비동기 저장소용, 앱 시작 시 1회 await). */
+export async function hydrateAuth(): Promise<void> {
+  const loaded = await persistence.load();
+  memAccessToken = loaded.accessToken;
+  memRefreshToken = loaded.refreshToken;
+}
+
+export const authStorage = {
+  getAccessToken(): string | null {
+    return memAccessToken;
+  },
+  getRefreshToken(): string | null {
+    return memRefreshToken;
+  },
+  setTokens(accessToken: string, refreshToken: string) {
+    memAccessToken = accessToken;
+    memRefreshToken = refreshToken;
+    void persistence.save(accessToken, refreshToken);
+  },
+  clearTokens() {
+    memAccessToken = null;
+    memRefreshToken = null;
+    void persistence.clear();
   },
 };
 

@@ -4,6 +4,7 @@
   "scripts": {
     "dev:web": "turbo run dev --filter=web",
     "build:web": "turbo run build --filter=web",
+    "dev:mobile": "pnpm --filter mobile start",
     "lint": "turbo run lint"
   },
   "devDependencies": {

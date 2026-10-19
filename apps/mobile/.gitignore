@@ -1,0 +1,16 @@
+# Expo / React Native
+.expo/
+dist/
+web-build/
+expo-env.d.ts.bak
+
+# 네이티브 프로젝트(prebuild/eas 시 생성)
+/ios
+/android
+
+# 환경변수
+.env
+*.env.local
+
+# 기타
+*.log
