@@ -16,6 +16,9 @@ const EMOJIS = [
   "🙏", "🎉", "❤️", "🔥", "✨", "💯", "📚", "☕",
 ];
 
+// 메시지 리액션용 고정 이모지 (백엔드 ALLOWED_REACTIONS와 동일하게 유지)
+const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢"];
+
 function sameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -58,6 +61,8 @@ export default function MeetingChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  // 리액션 피커가 열려 있는 메시지 id (없으면 null)
+  const [reactingTo, setReactingTo] = useState<number | null>(null);
 
   // 폴링에서 마지막으로 받은 메시지 id (afterId). stale closure 방지로 ref 사용.
   const lastIdRef = useRef<number>(0);
@@ -89,6 +94,22 @@ export default function MeetingChatPage() {
       if (last) lastIdRef.current = last.id;
       return merged;
     });
+  }
+
+  // 리액션 등으로 갱신된 단일 메시지를 목록에 반영한다.
+  function updateMessage(updated: MeetingChatMessage) {
+    setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+  }
+
+  // 메시지에 이모지 리액션 토글. 응답으로 온 집계 결과로 해당 메시지를 갱신한다.
+  async function handleReact(messageId: number, emoji: string) {
+    setReactingTo(null);
+    try {
+      const updated = await apiClient.reactToMeetingMessage(meetingId, messageId, emoji);
+      updateMessage(updated);
+    } catch {
+      // 리액션 실패는 조용히 무시(대화 흐름을 막지 않음)
+    }
   }
 
   // 모임 이름(헤더용) — 실패해도 채팅엔 영향 없다.
@@ -203,6 +224,27 @@ export default function MeetingChatPage() {
               !sameDay(new Date(next.createdAt), d) ||
               next.senderId !== m.senderId;
 
+            // 리액션 집계 칩(양쪽 메시지 공통). 내가 누른 이모지는 강조.
+            const chips = m.reactions.length > 0 && (
+              <div className={`mt-1 flex flex-wrap gap-1 ${m.mine ? "justify-end" : ""}`}>
+                {m.reactions.map((r) => (
+                  <button
+                    key={r.emoji}
+                    type="button"
+                    onClick={() => handleReact(m.id, r.emoji)}
+                    className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                      r.mine
+                        ? "border-gray-900/70 bg-gray-900/[0.06] text-gray-900"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span aria-hidden>{r.emoji}</span>
+                    <span className="tabular-nums">{r.count}</span>
+                  </button>
+                ))}
+              </div>
+            );
+
             return (
               <div key={m.id}>
                 {showDate && (
@@ -214,17 +256,20 @@ export default function MeetingChatPage() {
                 )}
 
                 {m.mine ? (
-                  <div className={`flex items-end justify-end gap-1.5 ${startOfGroup ? "mt-3" : "mt-0.5"}`}>
-                    {endOfGroup && (
-                      <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
-                    )}
-                    <p
-                      className={`max-w-[74%] whitespace-pre-wrap break-words bg-gray-900 px-3.5 py-2 text-sm leading-relaxed text-white ${
-                        startOfGroup ? "rounded-2xl rounded-tr-md" : "rounded-2xl"
-                      }`}
-                    >
-                      {m.content}
-                    </p>
+                  <div className={startOfGroup ? "mt-3" : "mt-0.5"}>
+                    <div className="flex items-end justify-end gap-1.5">
+                      {endOfGroup && (
+                        <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
+                      )}
+                      <p
+                        className={`max-w-[74%] whitespace-pre-wrap break-words bg-gray-900 px-3.5 py-2 text-sm leading-relaxed text-white ${
+                          startOfGroup ? "rounded-2xl rounded-tr-md" : "rounded-2xl"
+                        }`}
+                      >
+                        {m.content}
+                      </p>
+                    </div>
+                    {chips}
                   </div>
                 ) : (
                   <div className={`flex items-end gap-2 ${startOfGroup ? "mt-3" : "mt-0.5"}`}>
@@ -242,7 +287,7 @@ export default function MeetingChatPage() {
                       {startOfGroup && (
                         <p className="mb-1 ml-1 text-xs font-medium text-gray-500">{m.senderNickname}</p>
                       )}
-                      <div className="flex items-end gap-1.5">
+                      <div className="relative flex items-end gap-1.5">
                         <p
                           className={`max-w-[74%] whitespace-pre-wrap break-words bg-white px-3.5 py-2 text-sm leading-relaxed text-gray-900 shadow-sm ${
                             startOfGroup ? "rounded-2xl rounded-tl-md" : "rounded-2xl"
@@ -250,10 +295,40 @@ export default function MeetingChatPage() {
                         >
                           {m.content}
                         </p>
+                        {/* 리액션 추가 버튼 */}
+                        <button
+                          type="button"
+                          aria-label="반응 추가"
+                          onClick={() => setReactingTo((id) => (id === m.id ? null : m.id))}
+                          className="mb-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200/70 hover:text-gray-600"
+                        >
+                          <span aria-hidden className="text-sm">🙂</span>
+                        </button>
                         {endOfGroup && (
                           <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
                         )}
+                        {/* 리액션 이모지 피커 */}
+                        {reactingTo === m.id && (
+                          <div className="absolute bottom-full left-0 z-10 mb-1 flex gap-0.5 rounded-full border border-gray-200 bg-white px-1.5 py-1 shadow-lg">
+                            {REACTION_EMOJIS.map((emoji) => {
+                              const picked = m.reactions.some((r) => r.emoji === emoji && r.mine);
+                              return (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => handleReact(m.id, emoji)}
+                                  className={`flex h-8 w-8 items-center justify-center rounded-full text-lg transition-colors hover:bg-gray-100 ${
+                                    picked ? "bg-gray-100" : ""
+                                  }`}
+                                >
+                                  {emoji}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
+                      {chips}
                     </div>
                   </div>
                 )}

@@ -135,6 +135,13 @@ export type MeetingDetail = Meeting & {
   inviteToken: string | null;
 };
 
+/** 메시지 이모지 리액션 집계. mine=true면 내가 누른 이모지. */
+export type MeetingChatReaction = {
+  emoji: string;
+  count: number;
+  mine: boolean;
+};
+
 /** 모임 채팅 메시지. mine=true면 내가 보낸 메시지. */
 export type MeetingChatMessage = {
   id: number;
@@ -145,6 +152,7 @@ export type MeetingChatMessage = {
   content: string;
   createdAt: string;
   mine: boolean;
+  reactions: MeetingChatReaction[];
 };
 
 export type CreateMeetingPayload = {
@@ -445,5 +453,12 @@ export const apiClient = {
     request<MeetingChatMessage>(`/meetings/${id}/messages`, {
       method: "POST",
       body: JSON.stringify({ content }),
+    }),
+
+  /** 메시지 이모지 리액션 토글(추가/교체/취소). 갱신된 메시지를 반환 */
+  reactToMeetingMessage: (id: number, messageId: number, emoji: string) =>
+    request<MeetingChatMessage>(`/meetings/${id}/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
     }),
 };
