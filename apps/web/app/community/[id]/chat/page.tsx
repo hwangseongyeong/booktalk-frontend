@@ -9,6 +9,13 @@ import { BubbleIcon, PaperPlaneIcon } from "../../../../components/icons";
 
 const POLL_MS = 4000;
 
+// 간단한 이모지 팔레트 (별도 라이브러리 없이 기본 유니코드 이모지 사용)
+const EMOJIS = [
+  "😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😎",
+  "🤗", "🤔", "😴", "😭", "😡", "👍", "👎", "👏",
+  "🙏", "🎉", "❤️", "🔥", "✨", "💯", "📚", "☕",
+];
+
 function sameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -50,10 +57,28 @@ export default function MeetingChatPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
 
   // 폴링에서 마지막으로 받은 메시지 id (afterId). stale closure 방지로 ref 사용.
   const lastIdRef = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 커서 위치에 이모지를 삽입한다.
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? input.length;
+    const end = el?.selectionEnd ?? input.length;
+    const next = input.slice(0, start) + emoji + input.slice(end);
+    setInput(next);
+    // 삽입 후 커서를 이모지 뒤로 이동시키고 포커스 유지
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + emoji.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   function appendMessages(incoming: MeetingChatMessage[]) {
     if (incoming.length === 0) return;
@@ -124,6 +149,7 @@ export default function MeetingChatPage() {
       const saved = await apiClient.sendMeetingMessage(meetingId, content);
       appendMessages([saved]);
       setInput("");
+      setShowEmoji(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "메시지 전송에 실패했어요.");
     } finally {
@@ -240,25 +266,52 @@ export default function MeetingChatPage() {
 
       {/* 입력 바 */}
       {!error && (
-        <form
-          onSubmit={handleSend}
-          className="sticky bottom-0 flex items-center gap-2 border-t border-gray-200/80 bg-white/95 px-3 py-3 backdrop-blur"
-        >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="메시지를 입력하세요"
-            className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:bg-gray-50 focus:ring-2 focus:ring-gray-900/10"
-          />
-          <button
-            type="submit"
-            aria-label="전송"
-            disabled={!input.trim() || sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white transition-colors hover:bg-black disabled:opacity-30"
-          >
-            <PaperPlaneIcon size={18} />
-          </button>
-        </form>
+        <div className="sticky bottom-0 border-t border-gray-200/80 bg-white/95 backdrop-blur">
+          {/* 이모지 패널 */}
+          {showEmoji && (
+            <div className="grid grid-cols-8 gap-1 border-b border-gray-100 px-3 py-2">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => insertEmoji(emoji)}
+                  className="flex h-9 items-center justify-center rounded-lg text-xl transition-colors hover:bg-gray-100"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={handleSend} className="flex items-center gap-2 px-3 py-3">
+            <button
+              type="button"
+              aria-label="이모지"
+              aria-pressed={showEmoji}
+              onClick={() => setShowEmoji((v) => !v)}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl transition-colors hover:bg-gray-100 ${
+                showEmoji ? "bg-gray-100" : ""
+              }`}
+            >
+              <span aria-hidden>😊</span>
+            </button>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="메시지를 입력하세요"
+              className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:bg-gray-50 focus:ring-2 focus:ring-gray-900/10"
+            />
+            <button
+              type="submit"
+              aria-label="전송"
+              disabled={!input.trim() || sending}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white transition-colors hover:bg-black disabled:opacity-30"
+            >
+              <PaperPlaneIcon size={18} />
+            </button>
+          </form>
+        </div>
       )}
     </main>
   );
