@@ -348,7 +348,7 @@ export default function ShelfPage() {
 
   // 독서중 취소 → 기록 삭제. 성공하면 독서중 목록에서 제거한다.
   async function handleCancelReading(key: string) {
-    if (!window.confirm("독서중 기록을 취소할까요? 이 책은 독서중 목록에서 사라져요.")) return;
+    if (!window.confirm("이 책을 삭제할까요?")) return;
     setCancelingKey(key);
     setActionError(null);
     try {
@@ -363,7 +363,7 @@ export default function ShelfPage() {
 
   // 담아둔책 취소 → 위시리스트 기록 삭제. 성공하면 담아둔책 목록에서 제거한다.
   async function handleCancelWishlist(key: string) {
-    if (!window.confirm("담아둔책에서 뺄까요? 이 책은 담아둔책 목록에서 사라져요.")) return;
+    if (!window.confirm("이 책을 삭제할까요?")) return;
     setCancelingKey(key);
     setActionError(null);
     try {
