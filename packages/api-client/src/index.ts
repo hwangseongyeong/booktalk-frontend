@@ -341,10 +341,14 @@ async function refreshAccessToken(): Promise<void> {
 async function request<T>(path: string, options?: RequestInit, retry = true): Promise<T> {
   const accessToken = authStorage.getAccessToken();
 
+  // 멀티파트(FormData) 전송 시엔 Content-Type을 지정하지 않는다.
+  // 브라우저가 boundary를 포함한 multipart/form-data 헤더를 자동으로 붙여야 하기 때문.
+  const isFormData = typeof FormData !== "undefined" && options?.body instanceof FormData;
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options?.headers,
     },
@@ -423,6 +427,14 @@ export const apiClient = {
 
   completeOnboarding: () =>
     request<AuthUser>("/users/me/onboarding/complete", { method: "POST" }),
+
+  // ---------- 업로드 ----------
+  /** 이미지 업로드 → 저장된 접근 URL(상대경로). resolveAssetUrl로 절대 URL 변환해 사용. */
+  uploadImage: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ url: string }>("/uploads/images", { method: "POST", body: form });
+  },
 
   // ---------- 책 ----------
   searchBooks: (query?: string) =>
