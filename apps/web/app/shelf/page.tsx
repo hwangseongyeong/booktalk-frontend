@@ -33,6 +33,11 @@ type ShelfEntry = {
   coverImageUrl: string | null;
   spineImageUrl: string | null;
   primaryColor: string | null;
+  /** 완독책 전용: 완독일/별점/한줄평/감상 태그 (리스트 뷰·정렬에 사용) */
+  endDate: string | null;
+  rating: number | null;
+  oneLineNote: string | null;
+  myWords: string[];
 };
 
 function toShelfEntry(record: ReadingRecord): ShelfEntry {
@@ -43,7 +48,76 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
     coverImageUrl: record.book.coverImageUrl,
     spineImageUrl: resolveAssetUrl(record.book.spineImageUrl),
     primaryColor: record.book.primaryColor,
+    endDate: record.endDate,
+    rating: record.rating,
+    oneLineNote: record.oneLineNote,
+    myWords: record.myWords,
   };
+}
+
+// 완독 기록의 한줄평에는 완독 시 선택한 #태그 줄이 함께 저장된다. 실제 한줄평만 남긴다.
+function reviewText(note: string | null): string {
+  if (!note) return "";
+  return note
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join(" ")
+    .trim();
+}
+
+// 완독일(endDate) 최신순 정렬. 날짜 없으면 뒤로.
+function byRecentlyCompleted(a: ShelfEntry, b: ShelfEntry) {
+  return (b.endDate ?? "").localeCompare(a.endDate ?? "");
+}
+
+/** 별점을 항상 5개로 보여주고, 점수만큼 진하게 칠한다. */
+function Stars({ rating }: { rating: number }) {
+  const filled = Math.round(rating);
+  return (
+    <span className="ml-2">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} className={n <= filled ? "text-gray-900" : "text-gray-300"}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** 리스트 뷰: 홈 '나의 한줄'과 동일한 카드 형태. */
+function ReviewList({ books }: { books: ShelfEntry[] }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {books.map((book) => {
+        const review = reviewText(book.oneLineNote);
+        return (
+          <div
+            key={book.key}
+            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+          >
+            <p className="text-base font-bold text-gray-900">{book.title}</p>
+            <p className="mt-1 text-sm text-gray-400">
+              완독일 {book.endDate ?? "-"}
+              {book.rating != null && <Stars rating={book.rating} />}
+            </p>
+            {review && <p className="mt-3 text-sm text-gray-700">&quot;{review}&quot;</p>}
+            {book.myWords.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {book.myWords.map((word) => (
+                  <span
+                    key={word}
+                    className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+                  >
+                    {word}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ---------- 탭별 빈 상태 ----------
@@ -126,27 +200,42 @@ function BookCard({
         <div className="flex gap-1">
           <Link
             href={`/records/${book.key}/complete`}
-            className="flex flex-1 justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white"
+            className="flex flex-[7] justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white"
           >
             완독
           </Link>
           <button
             onClick={onCancel}
             disabled={canceling}
-            className="flex flex-1 justify-center rounded-full border border-gray-900 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-900 disabled:opacity-50"
+            aria-label="취소"
+            title="취소"
+            className="flex flex-[3] items-center justify-center rounded-full border border-gray-900 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-900 disabled:opacity-50"
           >
-            {canceling ? "취소 중" : "취소"}
+            {canceling ? "…" : "✕"}
           </button>
         </div>
       )}
       {onStart && (
-        <button
-          onClick={onStart}
-          disabled={starting}
-          className="flex justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
-        >
-          {starting ? "시작 중..." : "읽기 시작"}
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={onStart}
+            disabled={starting}
+            className="flex flex-[7] justify-center rounded-full bg-gray-900 px-2 py-1.5 text-[11px] font-bold text-white disabled:opacity-50"
+          >
+            {starting ? "시작 중..." : "읽기 시작"}
+          </button>
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              disabled={canceling}
+              aria-label="취소"
+              title="취소"
+              className="flex flex-[3] items-center justify-center rounded-full border border-gray-900 bg-white px-2 py-1.5 text-[11px] font-bold text-gray-900 disabled:opacity-50"
+            >
+              {canceling ? "…" : "✕"}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -200,6 +289,8 @@ export default function ShelfPage() {
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [cancelingKey, setCancelingKey] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("독서중");
+  // 완독책 보기 모드: 표지(그리드) / 리스트(나의 한줄)
+  const [completedView, setCompletedView] = useState<"표지" | "리스트">("표지");
 
   useEffect(() => {
     if (!ready) return;
@@ -214,7 +305,8 @@ export default function ShelfPage() {
           apiClient.getMyReadingRecords("WISHLIST"),
         ]);
         if (!cancelled) {
-          setCompleted(completedRecords.map(toShelfEntry));
+          // 완독책은 완독일 최신순으로 정렬해서 보여준다.
+          setCompleted(completedRecords.map(toShelfEntry).sort(byRecentlyCompleted));
           setReading(readingRecords.map(toShelfEntry));
           setWishlist(wishlistRecords.map(toShelfEntry));
         }
@@ -262,6 +354,21 @@ export default function ShelfPage() {
     try {
       await apiClient.cancelReadingRecord(Number(key));
       setReading((prev) => prev.filter((b) => b.key !== key));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "취소 처리에 실패했어요.");
+    } finally {
+      setCancelingKey(null);
+    }
+  }
+
+  // 담아둔책 취소 → 위시리스트 기록 삭제. 성공하면 담아둔책 목록에서 제거한다.
+  async function handleCancelWishlist(key: string) {
+    if (!window.confirm("담아둔책에서 뺄까요? 이 책은 담아둔책 목록에서 사라져요.")) return;
+    setCancelingKey(key);
+    setActionError(null);
+    try {
+      await apiClient.cancelReadingRecord(Number(key));
+      setWishlist((prev) => prev.filter((b) => b.key !== key));
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "취소 처리에 실패했어요.");
     } finally {
@@ -340,21 +447,49 @@ export default function ShelfPage() {
             {actionError && (
               <p className="mb-3 text-center text-sm text-red-600">{actionError}</p>
             )}
-            <BookGrid
-              books={activeBooks}
-              buildHref={
-                tab === "완독책"
-                  ? (key) => `/records/${key}/review`
-                  : tab === "독서중"
-                    ? (key) => `/records/${key}/complete`
-                    : undefined
-              }
-              showComplete={tab === "독서중"}
-              onCancel={tab === "독서중" ? handleCancelReading : undefined}
-              cancelingKey={cancelingKey}
-              onStart={tab === "담아둔책" ? handleStartReading : undefined}
-              startingKey={startingKey}
-            />
+            {/* 완독책: 표지로 보기 / 리스트로 보기 토글 */}
+            {tab === "완독책" && (
+              <div className="mb-4 flex justify-end gap-1">
+                {(["표지", "리스트"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setCompletedView(v)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                      completedView === v
+                        ? "bg-gray-900 text-white"
+                        : "border border-gray-300 text-gray-500"
+                    }`}
+                  >
+                    {v}로 보기
+                  </button>
+                ))}
+              </div>
+            )}
+            {tab === "완독책" && completedView === "리스트" ? (
+              <ReviewList books={activeBooks} />
+            ) : (
+              <BookGrid
+                books={activeBooks}
+                buildHref={
+                  tab === "완독책"
+                    ? (key) => `/records/${key}/review`
+                    : tab === "독서중"
+                      ? (key) => `/records/${key}/complete`
+                      : undefined
+                }
+                showComplete={tab === "독서중"}
+                onCancel={
+                  tab === "독서중"
+                    ? handleCancelReading
+                    : tab === "담아둔책"
+                      ? handleCancelWishlist
+                      : undefined
+                }
+                cancelingKey={cancelingKey}
+                onStart={tab === "담아둔책" ? handleStartReading : undefined}
+                startingKey={startingKey}
+              />
+            )}
           </>
         )}
       </div>
