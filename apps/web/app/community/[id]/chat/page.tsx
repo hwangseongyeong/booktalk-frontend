@@ -11,7 +11,16 @@ import {
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
+import { MeetingCover } from "../../../../components/community";
 import { BubbleIcon, PaperPlaneIcon } from "../../../../components/icons";
+
+type ChatHeaderInfo = {
+  name: string;
+  coverImageUrl: string | null;
+  spineImageUrl: string | null;
+  primaryColor: string | null;
+  memberCount: number;
+};
 
 // JWT access token의 sub(=내 userId)를 디코드한다. 실패 시 null → mine은 서버 값/false로 폴백.
 function decodeUserId(token: string | null): string | null {
@@ -91,7 +100,7 @@ export default function MeetingChatPage() {
     [],
   );
 
-  const [title, setTitle] = useState("대화방");
+  const [header, setHeader] = useState<ChatHeaderInfo | null>(null);
   const [messages, setMessages] = useState<MeetingChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -179,7 +188,16 @@ export default function MeetingChatPage() {
     if (!ready) return;
     let cancelled = false;
     apiClient.getMeeting(meetingId).then(
-      (m) => { if (!cancelled) setTitle(m.name); },
+      (m) => {
+        if (!cancelled)
+          setHeader({
+            name: m.name,
+            coverImageUrl: m.book.coverImageUrl,
+            spineImageUrl: m.book.spineImageUrl,
+            primaryColor: m.book.primaryColor,
+            memberCount: m.currentMemberCount,
+          });
+      },
       () => {},
     );
     return () => { cancelled = true; };
@@ -302,18 +320,34 @@ export default function MeetingChatPage() {
   return (
     <main className="mx-auto flex h-screen max-w-md flex-col bg-[#eef1f6]">
       {/* 헤더 */}
-      <header className="sticky top-0 z-10 flex items-center gap-1 border-b border-gray-200/80 bg-white/90 px-3 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200/80 bg-white/90 px-3 py-2.5 backdrop-blur">
         <button
           onClick={() => router.back()}
           aria-label="뒤로"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-900 transition-colors hover:bg-gray-100"
+          className="flex h-9 w-7 items-center justify-center text-gray-900"
         >
-          <span aria-hidden className="text-2xl font-bold leading-none">‹</span>
+          <span aria-hidden className="text-2xl leading-none">←</span>
         </button>
+        {header && (
+          <MeetingCover
+            title={header.name}
+            coverImageUrl={header.coverImageUrl ?? header.spineImageUrl}
+            primaryColor={header.primaryColor}
+            className="h-10 w-7 shrink-0"
+          />
+        )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-base font-bold text-gray-900">{title}</h1>
-          <p className="text-[11px] text-gray-400">참여자 대화방</p>
+          <h1 className="truncate text-sm font-bold text-gray-900">{header?.name ?? "대화방"}</h1>
+          <p className="text-[11px] text-gray-400">
+            {header ? `${header.memberCount}명 참여중` : "참여자 대화방"}
+          </p>
         </div>
+        <button
+          onClick={() => window.alert("준비 중이에요.")}
+          className="shrink-0 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-900 transition-colors hover:bg-gray-50"
+        >
+          다음 책 →
+        </button>
       </header>
 
       {/* 메시지 목록 */}
