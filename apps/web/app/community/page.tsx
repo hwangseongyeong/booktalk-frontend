@@ -200,7 +200,7 @@ export default function CommunityPage() {
             </>
           ) : (
             <button
-              onClick={() => window.alert("준비 중이에요.")}
+              onClick={() => router.push("/community/camera")}
               className="flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
             >
               첫 기록 남기기
