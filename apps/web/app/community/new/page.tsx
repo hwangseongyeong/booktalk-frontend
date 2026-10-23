@@ -5,34 +5,20 @@ import { useRouter } from "next/navigation";
 import {
   apiClient,
   type BookSearchResult,
-  type ReadingMode,
-  type MeetingVisibility,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../lib/useRequireAuth";
-import { BellIcon } from "../../../components/icons";
+import { BellIcon, BooksStackIcon } from "../../../components/icons";
 import { MeetingCover } from "../../../components/community";
-import { READING_MODE_LABEL } from "../../../lib/meetings";
-
-const MODES: { mode: ReadingMode; emoji: string; desc: string }[] = [
-  { mode: "TOGETHER", emoji: "📖", desc: "한 책을 같이" },
-  { mode: "SOLO", emoji: "👭", desc: "자유롭게 각자" },
-];
-
-const VISIBILITIES: { value: MeetingVisibility; emoji: string; label: string; desc: string }[] = [
-  { value: "PUBLIC", emoji: "🌐", label: "공개", desc: "목록에 노출, 누구나 참여" },
-  { value: "PRIVATE", emoji: "🔒", label: "비공개", desc: "초대 링크로만 참여" },
-];
 
 export default function CreateMeetingPage() {
   const ready = useRequireAuth();
   const router = useRouter();
 
-  const [mode, setMode] = useState<ReadingMode>("TOGETHER");
-  const [visibility, setVisibility] = useState<MeetingVisibility>("PUBLIC");
-  const [book, setBook] = useState<BookSearchResult | null>(null);
   const [name, setName] = useState("");
+  const [intro, setIntro] = useState(""); // 모임 소개 — 현재 백엔드 미지원(UI 전용)
+  const [book, setBook] = useState<BookSearchResult | null>(null);
 
-  // 책 선택 패널
+  // 책 선택(검색) 패널
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<BookSearchResult[]>([]);
@@ -63,8 +49,7 @@ export default function CreateMeetingPage() {
   function pickBook(item: BookSearchResult) {
     setBook(item);
     setPickerOpen(false);
-    // 모임 이름이 비어 있으면 기본값을 제안한다. (예: 소년이 온다 함께 읽기)
-    if (!name.trim()) setName(`${item.title} ${READING_MODE_LABEL[mode]}`);
+    if (!name.trim()) setName(`${item.title} 함께 읽기`);
   }
 
   async function handleSubmit() {
@@ -85,11 +70,12 @@ export default function CreateMeetingPage() {
         bookId = registered.id;
       }
 
+      // 읽는 방식/공개 범위는 현재 화면에 없으므로 기본값(함께·공개)으로 생성한다.
       await apiClient.createMeeting({
-        readingMode: mode,
+        readingMode: "TOGETHER",
         bookId,
         name: name.trim(),
-        visibility,
+        visibility: "PUBLIC",
       });
       router.push("/community");
     } catch (err) {
@@ -99,81 +85,56 @@ export default function CreateMeetingPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-white px-6 pb-28 pt-8">
+    <main className="mx-auto min-h-screen max-w-md bg-white px-5 pb-28 pt-8">
       {/* 헤더 */}
-      <header className="flex items-center justify-between">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-2xl font-bold text-gray-900"
-          aria-label="뒤로"
-        >
-          <span aria-hidden>‹</span>
-          모임 만들기
-        </button>
-        <button aria-label="알림" className="text-gray-800">
-          <BellIcon />
-        </button>
+      <header>
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.back()} aria-label="뒤로" className="text-2xl text-gray-900">
+            ←
+          </button>
+          <button aria-label="알림" className="text-gray-900">
+            <BellIcon />
+          </button>
+        </div>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">모임 만들기</h1>
       </header>
 
-      {/* 읽는 방식 */}
+      {/* 모임 이름 */}
       <section className="mt-8">
-        <h2 className="text-base font-bold text-gray-900">읽는 방식</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {MODES.map(({ mode: m, emoji, desc }) => {
-            const active = mode === m;
-            return (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-7 transition-colors ${
-                  active ? "border-gray-900 bg-white" : "border-gray-200 bg-gray-50"
-                }`}
-              >
-                <span className="text-2xl" aria-hidden>{emoji}</span>
-                <span className="text-base font-bold text-gray-900">{READING_MODE_LABEL[m]}</span>
-                <span className="text-xs text-gray-400">{desc}</span>
-              </button>
-            );
-          })}
-        </div>
+        <h2 className="text-base font-bold text-gray-900">모임 이름</h2>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 소년이 온다 함께 읽기"
+          className="mt-3 w-full rounded-full border border-gray-300 bg-white px-5 py-4 text-base outline-none placeholder:text-gray-400 focus:border-gray-900"
+        />
       </section>
 
-      {/* 공개 범위 */}
+      {/* 모임 소개 */}
       <section className="mt-7">
-        <h2 className="text-base font-bold text-gray-900">공개 범위</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {VISIBILITIES.map(({ value, emoji, label, desc }) => {
-            const active = visibility === value;
-            return (
-              <button
-                key={value}
-                onClick={() => setVisibility(value)}
-                className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-7 transition-colors ${
-                  active ? "border-gray-900 bg-white" : "border-gray-200 bg-gray-50"
-                }`}
-              >
-                <span className="text-2xl" aria-hidden>{emoji}</span>
-                <span className="text-base font-bold text-gray-900">{label}</span>
-                <span className="text-xs text-gray-400">{desc}</span>
-              </button>
-            );
-          })}
-        </div>
+        <h2 className="text-base font-bold text-gray-900">모임 소개</h2>
+        <textarea
+          value={intro}
+          onChange={(e) => setIntro(e.target.value)}
+          placeholder="예: 소년이 온다 함께 읽기"
+          rows={4}
+          className="mt-3 w-full resize-none rounded-3xl border border-gray-300 bg-white px-5 py-4 text-base outline-none placeholder:text-gray-400 focus:border-gray-900"
+        />
       </section>
 
-      {/* 책 선택 */}
+      {/* 함께 읽을 첫 책 */}
       <section className="mt-7">
-        <h2 className="text-base font-bold text-gray-900">책 선택</h2>
+        <h2 className="text-base font-bold text-gray-900">함께 읽을 첫 책</h2>
         <button
           onClick={() => setPickerOpen((v) => !v)}
-          className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-left shadow-sm"
+          className="mt-3 flex w-full items-center gap-4 rounded-3xl border-2 border-dashed border-gray-300 px-5 py-5 text-left"
         >
           {book ? (
             <>
               <MeetingCover
                 title={book.title}
                 coverImageUrl={book.coverImageUrl}
-                className="h-12 w-9"
+                className="h-16 w-12"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-bold text-gray-900">{book.title}</p>
@@ -182,34 +143,45 @@ export default function CreateMeetingPage() {
               <span className="shrink-0 text-sm font-medium text-gray-400">변경</span>
             </>
           ) : (
-            <>
-              <span className="flex h-12 w-9 items-center justify-center rounded-md bg-gray-100 text-gray-400">
-                +
-              </span>
-              <span className="text-base font-medium text-gray-400">읽을 책을 선택해주세요</span>
-            </>
+            <span className="relative flex h-16 w-12 items-center justify-center rounded-md border border-gray-300 text-2xl text-gray-400">
+              {/* 책갈피 */}
+              <span className="absolute left-1/2 top-0 h-3 w-2.5 -translate-x-1/2 bg-[#F7EF82]" aria-hidden />
+              +
+            </span>
           )}
         </button>
 
         {pickerOpen && (
-          <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+          <div className="mt-3 rounded-3xl border border-gray-200 bg-gray-50 p-4">
             <form onSubmit={handleSearch} className="flex gap-2">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="제목, 저자로 검색"
+                placeholder="제목, 저자로 검색 (카카오 통합검색)"
                 className="min-w-0 flex-1 rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-gray-900"
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-gray-900 px-4 py-2.5 text-sm font-bold text-white"
+                className="shrink-0 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-bold text-white"
               >
                 검색
               </button>
             </form>
 
-            {searching && <p className="mt-3 px-1 text-sm text-gray-400">불러오는 중...</p>}
-            {searchError && <p className="mt-3 px-1 text-sm text-red-600">{searchError}</p>}
+            {searching && <p className="mt-4 px-1 text-center text-sm text-gray-400">불러오는 중...</p>}
+            {searchError && <p className="mt-4 px-1 text-center text-sm text-red-600">{searchError}</p>}
+
+            {!searching && !searchError && results.length === 0 && (
+              <div className="flex flex-col items-center py-8 text-center text-gray-400">
+                <BooksStackIcon />
+                <p className="mt-4 text-base font-bold text-gray-700">어떤 책을 함께 읽을까요?</p>
+                <p className="mt-1 text-sm leading-relaxed">
+                  제목이나 지은이 이름으로
+                  <br />
+                  책을 찾아보세요
+                </p>
+              </div>
+            )}
 
             {!searching && results.length > 0 && (
               <ul className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
@@ -237,24 +209,13 @@ export default function CreateMeetingPage() {
         )}
       </section>
 
-      {/* 모임 이름 */}
-      <section className="mt-7">
-        <h2 className="text-base font-bold text-gray-900">모임 이름</h2>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="예: 소년이 온다 함께 읽기"
-          className="mt-3 w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base outline-none placeholder:text-gray-400 focus:border-gray-900"
-        />
-      </section>
-
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-6 pb-6 pt-3">
+      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-5 pb-6 pt-3">
         {submitError && <p className="mb-2 text-center text-sm text-red-600">{submitError}</p>}
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="w-full rounded-full bg-gray-900 py-4 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-40"
+          className="w-full rounded-full bg-[#F7EF82] py-4 text-base font-bold text-gray-900 transition-[filter] hover:brightness-95 disabled:opacity-40"
         >
           {submitting ? "만드는 중..." : "모임 만들기"}
         </button>
