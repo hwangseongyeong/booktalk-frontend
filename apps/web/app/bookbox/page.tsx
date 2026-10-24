@@ -19,7 +19,7 @@ function hashSeed(seed: string) {
 
 // ---------- 타입 ----------
 type Granularity = "월별" | "연간";
-type ViewMode = "가로" | "세로";
+type ViewMode = "가로" | "세로" | "펼치기";
 
 type ShelfEntry = {
   key: string;
@@ -47,14 +47,10 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
   };
 }
 
-// 책등 기울기 후보(대부분 반듯하게, 일부만 좌우로 기움) — 책별 고정 시드로 선택
-const TILT_ANGLES = [0, 0, 0, 0, -5, 5, -7, 6, -4, 0, 0, 7];
-
 // ---------- 세워둔 책등 (파스텔 + 세로 제목 + 출판사) ----------
-function BookSpine({ book, index }: { book: ShelfEntry; index: number }) {
+function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
   const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
-  const tiltDeg = TILT_ANGLES[hashSeed(`${book.key}-tilt`) % TILT_ANGLES.length];
   const maxChars = Math.max(2, Math.floor((height - 48) / 15));
   const shortTitle =
     book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
@@ -68,7 +64,7 @@ function BookSpine({ book, index }: { book: ShelfEntry; index: number }) {
         backgroundColor: color,
         borderColor: SPINE_INK,
         color: SPINE_INK,
-        transform: tiltDeg ? `rotate(${tiltDeg}deg)` : undefined,
+        transform: tilt ? "rotate(7deg)" : undefined,
       }}
     >
       <span className="flex flex-col items-center leading-[1.15]">
@@ -103,7 +99,12 @@ function ShelfView({ books }: { books: ShelfEntry[] }) {
       <div className="flex items-end justify-center gap-1.5 overflow-x-auto px-2">
         <Bookend />
         {books.map((book, i) => (
-          <BookSpine key={book.key} book={book} index={i} />
+          <BookSpine
+            key={book.key}
+            book={book}
+            index={i}
+            tilt={books.length > 1 && i === Math.floor(books.length / 2)}
+          />
         ))}
         <Bookend />
       </div>
@@ -119,13 +120,13 @@ const STACK_OFFSETS = [0, 0, 0, -8, 8, -5, 5, 0, 10, -10, 0];
 // ---------- 눕힌 책 한 권(세로쌓기용) ----------
 function FlatBook({ book, index }: { book: ShelfEntry; index: number }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
-  const width = 150 + (hashSeed(book.title) % 5) * 16; // 150~214, 책마다 폭이 조금씩 다름
+  const width = 190 + (hashSeed(book.title) % 5) * 16; // 190~254, 책마다 폭이 조금씩 다름
   const offset = STACK_OFFSETS[hashSeed(`${book.key}-off`) % STACK_OFFSETS.length];
 
   return (
     <div
       title={book.title}
-      className="flex h-9 items-center justify-between rounded-md border px-3"
+      className="flex h-9 items-center rounded-md border px-3"
       style={{
         width,
         backgroundColor: color,
@@ -135,9 +136,10 @@ function FlatBook({ book, index }: { book: ShelfEntry; index: number }) {
       }}
     >
       <span className="truncate text-[12px] font-bold">{book.title}</span>
-      {book.publisher && (
-        <span className="ml-2 shrink-0 text-[9px] font-bold opacity-80">{book.publisher}</span>
-      )}
+      <span className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        {book.author && <span className="text-[9px] opacity-60">{book.author}</span>}
+        {book.publisher && <span className="text-[9px] font-bold opacity-80">{book.publisher}</span>}
+      </span>
     </div>
   );
 }
@@ -153,6 +155,40 @@ function StackView({ books }: { books: ShelfEntry[] }) {
       </div>
       {/* 바닥 */}
       <div className="relative z-10 mt-0.5 h-3 w-full rounded-sm bg-[#D9D9D9]" />
+    </div>
+  );
+}
+
+// ---------- 표지 그리드(펼치기) 뷰 ----------
+function GridView({ books }: { books: ShelfEntry[] }) {
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      {books.map((book, i) => {
+        const image = book.coverImageUrl;
+        return image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={book.key}
+            src={image}
+            alt={book.title}
+            title={book.title}
+            className="aspect-[3/4] w-full rounded-md border border-gray-200 object-cover"
+          />
+        ) : (
+          <div
+            key={book.key}
+            title={book.title}
+            className="flex aspect-[3/4] w-full flex-col items-center justify-center rounded-md border p-2 text-center"
+            style={{
+              backgroundColor: SPINE_PASTELS[i % SPINE_PASTELS.length],
+              borderColor: SPINE_INK,
+              color: SPINE_INK,
+            }}
+          >
+            <span className="line-clamp-4 text-[11px] font-bold leading-tight">{book.title}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -311,7 +347,7 @@ export default function BookBoxPage() {
           options={["월별 보기", "연간 보기"]}
           onChange={(v) => setGranularity(v === "연간 보기" ? "연간" : "월별")}
         />
-        <PillDropdown value={viewMode} options={["가로", "세로"]} onChange={setViewMode} />
+        <PillDropdown value={viewMode} options={["가로", "세로", "펼치기"]} onChange={setViewMode} />
         <button
           onClick={handleShare}
           aria-label="공유"
@@ -378,8 +414,10 @@ export default function BookBoxPage() {
           </div>
         ) : viewMode === "가로" ? (
           <ShelfView books={books} />
-        ) : (
+        ) : viewMode === "세로" ? (
           <StackView books={books} />
+        ) : (
+          <GridView books={books} />
         )}
       </div>
 
