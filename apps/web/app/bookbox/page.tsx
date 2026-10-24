@@ -418,7 +418,15 @@ export default function BookBoxPage() {
             </p>
           </div>
         ) : viewMode === "가로" ? (
-          <ShelfView books={books} />
+          <>
+            {/* 가로쌓기는 최대 10권까지만 책꽂이에 표시한다. */}
+            <ShelfView books={books.slice(0, 10)} />
+            {books.length > 10 && (
+              <p className="mt-4 text-center text-xs text-gray-400">
+                책꽂이에는 최대 10권까지만 보여드려요.
+              </p>
+            )}
+          </>
         ) : viewMode === "세로" ? (
           <StackView books={books} />
         ) : (
