@@ -51,6 +51,9 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
 function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
   const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
+  const tiltDeg = 7;
+  // 기울인 책의 윗부분이 옆 책을 침범하지 않도록, 기울기만큼 좌우 여백을 확보한다.
+  const leanPx = tilt ? Math.ceil(height * Math.sin((tiltDeg * Math.PI) / 180)) : 0;
   const maxChars = Math.max(2, Math.floor((height - 48) / 15));
   const shortTitle =
     book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
@@ -64,7 +67,9 @@ function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; til
         backgroundColor: color,
         borderColor: SPINE_INK,
         color: SPINE_INK,
-        transform: tilt ? "rotate(7deg)" : undefined,
+        transform: tilt ? `rotate(${tiltDeg}deg)` : undefined,
+        marginLeft: leanPx || undefined,
+        marginRight: leanPx || undefined,
       }}
     >
       <span className="flex flex-col items-center leading-[1.15]">
