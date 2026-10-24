@@ -194,7 +194,7 @@ export default function BookBoxPage() {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [granularity, setGranularity] = useState<Granularity>("연간");
+  const [granularity, setGranularity] = useState<Granularity>("월별");
   const [viewMode, setViewMode] = useState<ViewMode>("가로");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
