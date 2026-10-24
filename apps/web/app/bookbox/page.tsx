@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, authStorage, resolveAssetUrl, type ReadingRecord } from "@booktalk/api-client";
+import { apiClient, authStorage, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { BellIcon, ShareIcon } from "../../components/icons";
 import { BottomNav } from "../../components/bottom-nav";
 
-// ---------- 색상 폴백 ----------
-const FALLBACK_COLORS = ["#8B5E3C", "#4A6C6F", "#7A6C5D", "#5B6B8C", "#8C5B6B", "#6B8C5B", "#8C7A5B", "#5B7A8C"];
+// ---------- 파스텔 책등 팔레트 (디자인 색상) ----------
+const SPINE_PASTELS = ["#F7CF87", "#FFFEAC", "#FFFDE8", "#D8EAF6", "#E0F3C7"];
+const SPINE_INK = "#1E1E1E"; // 책등 글자·테두리
 
 function hashSeed(seed: string) {
   let hash = 0;
@@ -16,29 +17,9 @@ function hashSeed(seed: string) {
   return Math.abs(hash);
 }
 
-function fallbackColor(seed: string) {
-  return FALLBACK_COLORS[hashSeed(seed) % FALLBACK_COLORS.length];
-}
-
-// ---------- 날짜 유틸 ----------
-function currentYearMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function shiftYearMonth(yearMonth: string, delta: number) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function formatLabel(yearMonth: string) {
-  const [y, m] = yearMonth.split("-").map(Number);
-  return `${y}년 ${m}월`;
-}
-
 // ---------- 타입 ----------
-type ViewMode = "펼치기" | "가로" | "세로";
+type Granularity = "월별" | "연간";
+type ViewMode = "가로" | "세로";
 
 type ShelfEntry = {
   key: string;
@@ -46,7 +27,6 @@ type ShelfEntry = {
   author: string | null;
   publisher: string | null;
   coverImageUrl: string | null;
-  spineImageUrl: string | null;
   primaryColor: string | null;
   myWords: string[];
   oneLineNote: string | null;
@@ -60,7 +40,6 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
     author: record.book.author,
     publisher: record.book.publisher,
     coverImageUrl: record.book.coverImageUrl,
-    spineImageUrl: resolveAssetUrl(record.book.spineImageUrl),
     primaryColor: record.book.primaryColor,
     myWords: record.myWords,
     oneLineNote: record.oneLineNote,
@@ -68,40 +47,39 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
   };
 }
 
-// ---------- 세워둔 책등 ----------
-function BookSpine({ book, height }: { book: ShelfEntry; height: number }) {
-  if (book.spineImageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={book.spineImageUrl}
-        alt={book.title}
-        title={book.title}
-        style={{ height, width: "auto" }}
-        className="shrink-0 rounded-t-sm shadow-sm"
-      />
-    );
-  }
-
-  const color = book.primaryColor ?? fallbackColor(book.title);
-  const maxChars = Math.max(2, Math.floor((height - 24) / 14));
-  const shortTitle = book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
+// ---------- 세워둔 책등 (파스텔 + 세로 제목 + 출판사) ----------
+function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
+  const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
+  const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
+  const maxChars = Math.max(2, Math.floor((height - 48) / 15));
+  const shortTitle =
+    book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
 
   return (
     <div
       title={book.title}
-      className="flex w-9 shrink-0 flex-col items-center justify-between rounded-t-sm py-2"
-      style={{ height, backgroundColor: color }}
+      className="flex w-[38px] shrink-0 origin-bottom flex-col items-center justify-between rounded-md border py-3"
+      style={{
+        height,
+        backgroundColor: color,
+        borderColor: SPINE_INK,
+        color: SPINE_INK,
+        transform: tilt ? "rotate(7deg)" : undefined,
+      }}
     >
-      <span className="flex flex-col items-center leading-tight">
+      <span className="flex flex-col items-center leading-[1.15]">
         {Array.from(shortTitle).map((char, i) => (
-          <span key={i} className="text-[11px] font-bold text-white/90">{char}</span>
+          <span key={i} className="text-[11px] font-bold">
+            {char}
+          </span>
         ))}
       </span>
-      {book.author && (
-        <span className="flex flex-col items-center leading-tight">
-          {Array.from(book.author.slice(0, 3)).map((char, i) => (
-            <span key={i} className="text-[9px] text-white/60">{char}</span>
+      {book.publisher && (
+        <span className="flex flex-col items-center leading-tight opacity-80">
+          {Array.from(book.publisher.slice(0, 2)).map((char, i) => (
+            <span key={i} className="text-[9px] font-bold">
+              {char}
+            </span>
           ))}
         </span>
       )}
@@ -109,52 +87,33 @@ function BookSpine({ book, height }: { book: ShelfEntry; height: number }) {
   );
 }
 
-// ---------- 펼치기(책등 세우기) 뷰 ----------
-function SpreadView({ books }: { books: ShelfEntry[] }) {
+// ---------- 북엔드 ----------
+function Bookend() {
+  return <span aria-hidden className="h-[110px] w-2 shrink-0 self-end rounded-full bg-[#AFAFAF]" />;
+}
+
+// ---------- 책꽂이(가로) 뷰 ----------
+function ShelfView({ books }: { books: ShelfEntry[] }) {
   return (
-    <div>
-      <div className="flex items-end gap-1.5 overflow-x-auto px-1 pb-1">
-        {books.map((book) => (
-          <BookSpine key={book.key} book={book} height={140} />
+    <div className="relative">
+      <div className="flex items-end justify-center gap-1.5 overflow-x-auto px-2">
+        <Bookend />
+        {books.map((book, i) => (
+          <BookSpine key={book.key} book={book} index={i} tilt={i === books.length - 1 && books.length > 1} />
         ))}
+        <Bookend />
       </div>
       {/* 선반 */}
-      <div className="h-3 w-full rounded-sm bg-gray-300" />
+      <div className="relative z-10 -mt-0.5 h-3 w-full rounded-sm bg-[#D9D9D9]" />
     </div>
   );
 }
 
-// ---------- 가로 쌓기 뷰 ----------
-function HorizontalView({ books }: { books: ShelfEntry[] }) {
-  return (
-    <div>
-      <div className="flex flex-col items-center gap-2">
-        {books.map((book) => (
-          <div
-            key={book.key}
-            className="flex w-[85%] items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-3"
-            style={{ borderLeft: `6px solid ${book.primaryColor ?? fallbackColor(book.title)}` }}
-          >
-            <span className="truncate text-sm font-bold text-gray-900">{book.title}</span>
-            <span className="ml-auto flex shrink-0 items-center gap-2 text-[11px] text-gray-400">
-              {book.author && <span className="truncate">{book.author}</span>}
-              {book.publisher && <span className="truncate">{book.publisher}</span>}
-            </span>
-          </div>
-        ))}
-      </div>
-      {/* 선반 */}
-      <div className="mt-1 h-3 w-full rounded-sm bg-gray-300" />
-    </div>
-  );
-}
-
-// ---------- 세로(표지 그리드) 뷰 ----------
+// ---------- 표지 그리드(세로) 뷰 ----------
 function GridView({ books }: { books: ShelfEntry[] }) {
   return (
     <div className="grid grid-cols-3 gap-4">
-      {books.map((book) => {
-        // 세로(표지) 뷰는 표지만 사용한다. 책등으로 폴백하면 펼치기 뷰처럼 보이므로 폴백하지 않는다.
+      {books.map((book, i) => {
         const image = book.coverImageUrl;
         return image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -163,19 +122,63 @@ function GridView({ books }: { books: ShelfEntry[] }) {
             src={image}
             alt={book.title}
             title={book.title}
-            className="aspect-[3/4] w-full rounded-md border border-gray-300 object-cover"
+            className="aspect-[3/4] w-full rounded-md border border-gray-200 object-cover"
           />
         ) : (
           <div
             key={book.key}
             title={book.title}
-            className="flex aspect-[3/4] w-full flex-col items-center justify-center rounded-md border border-gray-300 p-2 text-center"
-            style={{ backgroundColor: book.primaryColor ?? fallbackColor(book.title) }}
+            className="flex aspect-[3/4] w-full flex-col items-center justify-center rounded-md border p-2 text-center"
+            style={{ backgroundColor: SPINE_PASTELS[i % SPINE_PASTELS.length], borderColor: SPINE_INK, color: SPINE_INK }}
           >
-            <span className="line-clamp-4 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+            <span className="line-clamp-4 text-[11px] font-bold leading-tight">{book.title}</span>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ---------- 드롭다운 필 ----------
+function PillDropdown<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: T[];
+  onChange: (v: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 rounded-full border border-gray-900 px-4 py-2 text-sm font-bold text-gray-900"
+      >
+        {value} <span aria-hidden className="text-xs">▾</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute z-20 mt-1 w-32 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+            {options.map((o) => (
+              <button
+                key={o}
+                onClick={() => {
+                  onChange(o);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-2.5 text-left text-sm ${
+                  o === value ? "font-bold text-gray-900" : "text-gray-500"
+                } hover:bg-gray-50`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -187,9 +190,12 @@ export default function BookBoxPage() {
   const [completed, setCompleted] = useState<ShelfEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [yearMonth, setYearMonth] = useState(currentYearMonth());
+
+  const now = useMemo(() => new Date(), []);
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [granularity, setGranularity] = useState<Granularity>("연간");
   const [viewMode, setViewMode] = useState<ViewMode>("가로");
-  const [viewOpen, setViewOpen] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -216,14 +222,19 @@ export default function BookBoxPage() {
     }
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [ready, router]);
 
-  // 완독일(endDate) 기준으로 선택한 달의 책만 추린다.
-  const books = useMemo(
-    () => completed.filter((b) => b.endDate?.startsWith(yearMonth)),
-    [completed, yearMonth],
-  );
+  // 완독일(endDate) 기준으로 기간(연/월)에 해당하는 책만 추린다.
+  const books = useMemo(() => {
+    if (granularity === "연간") {
+      return completed.filter((b) => b.endDate?.slice(0, 4) === String(year));
+    }
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    return completed.filter((b) => b.endDate?.startsWith(prefix));
+  }, [completed, granularity, year, month]);
 
   if (!ready) return null;
 
@@ -233,9 +244,22 @@ export default function BookBoxPage() {
     reviews: books.filter((b) => b.oneLineNote && b.oneLineNote.trim()).length,
   };
 
+  const periodLabel = granularity === "연간" ? `${year}년` : `${year}년 ${month}월`;
+  const navUnit = granularity === "연간" ? "연도" : "달";
+
+  function shiftPeriod(delta: number) {
+    if (granularity === "연간") {
+      setYear((y) => y + delta);
+      return;
+    }
+    const d = new Date(year, month - 1 + delta, 1);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth() + 1);
+  }
+
   async function handleShare() {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `${formatLabel(yearMonth)}의 내 북박스`;
+    const text = `${periodLabel}의 내 북박스`;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({ title: "북박스", text, url });
@@ -251,93 +275,71 @@ export default function BookBoxPage() {
     }
   }
 
-  const VIEW_OPTIONS: ViewMode[] = ["가로", "펼치기", "세로"];
-
   return (
     <div className="mx-auto min-h-screen max-w-md bg-white px-5 pb-24 pt-8">
       {/* 헤더 */}
       <header className="flex items-start justify-between">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">북박스</h1>
-        <button aria-label="알림" className="text-gray-800">
+        <button aria-label="알림" className="text-gray-900">
           <BellIcon />
         </button>
       </header>
       <div className="mt-3 border-b border-gray-900" />
 
-      {/* 컨트롤 바: 월 · 뷰 모드 · 공유 */}
+      {/* 컨트롤 바: 기간 모드 · 보기 방식 · 공유 */}
       <div className="mt-4 flex items-center gap-2">
-        <span className="rounded-full bg-gray-900 px-4 py-2 text-sm font-bold text-white">
-          {formatLabel(yearMonth)} ▼
-        </span>
-
-        <div className="relative">
-          <button
-            onClick={() => setViewOpen((v) => !v)}
-            className="rounded-full border-2 border-gray-900 px-4 py-2 text-sm font-bold text-gray-900"
-          >
-            {viewMode} ▼
-          </button>
-          {viewOpen && (
-            <div className="absolute z-10 mt-1 w-28 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-              {VIEW_OPTIONS.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => { setViewMode(v); setViewOpen(false); }}
-                  className={`block w-full px-4 py-2 text-left text-sm ${
-                    v === viewMode ? "font-bold text-gray-900" : "text-gray-500"
-                  } hover:bg-gray-50`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
+        <PillDropdown
+          value={granularity === "연간" ? "연간 보기" : "월별 보기"}
+          options={["월별 보기", "연간 보기"]}
+          onChange={(v) => setGranularity(v === "연간 보기" ? "연간" : "월별")}
+        />
+        <PillDropdown value={viewMode} options={["가로", "세로"]} onChange={setViewMode} />
         <button
           onClick={handleShare}
           aria-label="공유"
-          className="ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-800"
+          className="ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-800 hover:bg-gray-50"
         >
-          <ShareIcon size={20} />
+          <ShareIcon size={18} />
         </button>
       </div>
 
       {shareMsg && <p className="mt-2 text-right text-xs font-medium text-emerald-600">{shareMsg}</p>}
 
-      {/* 월 이동 */}
-      <div className="mt-4 flex items-center justify-between">
+      {/* 기간 이동 */}
+      <div className="mt-5 flex items-center justify-between">
         <button
-          onClick={() => setYearMonth((v) => shiftYearMonth(v, -1))}
+          onClick={() => shiftPeriod(-1)}
           className="text-sm font-medium text-gray-400 hover:text-gray-700"
         >
-          ← 이전 달
+          ← 이전 {navUnit}
         </button>
-        <span className="text-xl font-bold text-gray-900">{formatLabel(yearMonth)} ▼</span>
+        <span className="text-xl font-bold text-gray-900">{periodLabel}</span>
         <button
-          onClick={() => setYearMonth((v) => shiftYearMonth(v, 1))}
+          onClick={() => shiftPeriod(1)}
           className="text-sm font-medium text-gray-400 hover:text-gray-700"
         >
-          다음 달 →
+          다음 {navUnit} →
         </button>
       </div>
 
       {/* 통계 카드 */}
-      <div className="mt-4 grid grid-cols-3 rounded-2xl bg-gray-100 py-6">
-        {([
-          [stats.books, "Books"],
-          [stats.words, "Words"],
-          [stats.reviews, "Reviews"],
-        ] as [number, string][]).map(([value, label]) => (
+      <div className="mt-4 grid grid-cols-3 rounded-2xl border border-gray-200 py-6">
+        {(
+          [
+            [stats.books, "Books"],
+            [stats.words, "Words"],
+            [stats.reviews, "Reviews"],
+          ] as [number, string][]
+        ).map(([value, label]) => (
           <div key={label} className="flex flex-col items-center gap-1">
-            <span className="text-2xl font-bold text-gray-900">{value}</span>
+            <span className="text-3xl font-bold text-gray-900">{value}</span>
             <span className="text-sm text-gray-500">{label}</span>
           </div>
         ))}
       </div>
 
       {/* 책 시각화 */}
-      <div className="mt-8">
+      <div className="mt-10">
         {loading ? (
           <p className="text-center text-sm text-gray-300">불러오는 중...</p>
         ) : loadError ? (
@@ -352,12 +354,12 @@ export default function BookBoxPage() {
           </div>
         ) : books.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-gray-400">이 달에 완독한 책이 없어요.</p>
+            <p className="text-sm text-gray-400">
+              이 {navUnit}에 완독한 책이 없어요.
+            </p>
           </div>
         ) : viewMode === "가로" ? (
-          <SpreadView books={books} />
-        ) : viewMode === "세로" ? (
-          <HorizontalView books={books} />
+          <ShelfView books={books} />
         ) : (
           <GridView books={books} />
         )}
