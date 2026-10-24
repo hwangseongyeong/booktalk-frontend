@@ -24,7 +24,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <span className="ml-2">
       {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={n <= filled ? "text-gray-900" : "text-gray-300"}>
+        <span key={n} className={n <= filled ? "text-yellow-400" : "text-gray-300"}>
           ★
         </span>
       ))}
