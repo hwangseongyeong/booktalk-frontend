@@ -206,7 +206,7 @@ function CommunityPageInner() {
       </header>
 
       {/* 소개 문구 */}
-      <p className="mt-2 text-lg font-medium text-gray-500">
+      <p className="mt-2 text-sm font-medium text-gray-500">
         책으로 연결되고, 이야기로 가까워지는 우리
       </p>
 

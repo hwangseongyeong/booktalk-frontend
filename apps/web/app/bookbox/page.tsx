@@ -345,7 +345,7 @@ export default function BookBoxPage() {
       </header>
 
       {/* 소개 문구 */}
-      <p className="mt-2 text-lg font-medium text-gray-500">
+      <p className="mt-2 text-sm font-medium text-gray-500">
         읽은 책을 나만의 책장에 담고, 친구들과 공유해 보세요.
       </p>
 
