@@ -8,7 +8,7 @@ import { BottomNav } from "../components/bottom-nav";
 import { RegisterBookButton } from "../components/register-book-button";
 
 // 완독 기록의 한줄평에는 완독 처리 시 선택한 키워드가 #태그 줄로 함께 저장된다.
-// '나의 한줄' 섹션에서는 태그 줄을 걸러 실제 한줄평만 보여준다.
+// '나의 리뷰' 섹션에서는 태그 줄을 걸러 실제 한줄평만 보여준다.
 function reviewText(note: string | null): string {
   if (!note) return "";
   return note
@@ -142,9 +142,9 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 나의 한줄 */}
+      {/* 나의 리뷰 */}
       <section className="mt-10">
-        <h2 className="text-lg font-bold text-gray-900">나의 한줄</h2>
+        <h2 className="text-lg font-bold text-gray-900">나의 리뷰</h2>
 
         {!loading && completed.length === 0 ? (
           <p className="mt-4 text-sm text-gray-400">아직 완독한 책이 없어요.</p>

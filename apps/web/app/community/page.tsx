@@ -15,9 +15,9 @@ import { BottomNav } from "../../components/bottom-nav";
 import { BellIcon, PlusIcon } from "../../components/icons";
 import { ReadingModeBadge, MeetingCover } from "../../components/community";
 
-type BookmateTab = "함께 북톡" | "혼자 기록";
+type BookmateTab = "함께 북톡" | "혼자 북톡";
 
-/** 혼자 기록 작성일 표기(예: 2026.10.24) */
+/** 혼자 북톡 작성일 표기(예: 2026.10.24) */
 function formatNoteDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -25,7 +25,7 @@ function formatNoteDate(iso: string): string {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
 }
 
-/** 혼자 기록 카드 */
+/** 혼자 북톡 카드 */
 function BookNoteCard({ note, onDelete }: { note: BookNote; onDelete: (id: number) => void }) {
   const imageSrc = resolveAssetUrl(note.imageUrl);
   return (
@@ -126,7 +126,7 @@ function CommunityPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<BookmateTab>(
-    searchParams.get("tab") === "solo" ? "혼자 기록" : "함께 북톡",
+    searchParams.get("tab") === "solo" ? "혼자 북톡" : "함께 북톡",
   );
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +154,7 @@ function CommunityPageInner() {
     return () => { cancelled = true; };
   }, [ready]);
 
-  // 혼자 기록 목록
+  // 혼자 북톡 목록
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
@@ -172,7 +172,7 @@ function CommunityPageInner() {
     return () => { cancelled = true; };
   }, [ready]);
 
-  // 혼자 기록 삭제
+  // 혼자 북톡 삭제
   async function handleDeleteNote(id: number) {
     if (!window.confirm("이 기록을 삭제할까요?")) return;
     const prev = notes;
@@ -222,7 +222,7 @@ function CommunityPageInner() {
 
       {/* 탭 */}
       <div className="mt-5 flex border-b border-gray-200">
-        {(["함께 북톡", "혼자 기록"] as BookmateTab[]).map((t) => {
+        {(["함께 북톡", "혼자 북톡"] as BookmateTab[]).map((t) => {
           const active = tab === t;
           const count = t === "함께 북톡" ? meetings.length : notes.length;
           return (

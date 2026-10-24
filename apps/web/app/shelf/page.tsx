@@ -84,7 +84,7 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-/** 리스트 뷰: 홈 '나의 한줄'과 동일한 카드 형태. */
+/** 리스트 뷰: 홈 '나의 리뷰'과 동일한 카드 형태. */
 function ReviewList({ books }: { books: ShelfEntry[] }) {
   return (
     <div className="flex flex-col gap-4">
@@ -289,7 +289,7 @@ export default function ShelfPage() {
   const [startingKey, setStartingKey] = useState<string | null>(null);
   const [cancelingKey, setCancelingKey] = useState<string | null>(null);
   const [tab, setTab] = useState<ShelfTab>("독서중");
-  // 완독책 보기 모드: 표지(그리드) / 리스트(나의 한줄)
+  // 완독책 보기 모드: 표지(그리드) / 리스트(나의 리뷰)
   const [completedView, setCompletedView] = useState<"표지" | "리스트">("표지");
 
   useEffect(() => {
