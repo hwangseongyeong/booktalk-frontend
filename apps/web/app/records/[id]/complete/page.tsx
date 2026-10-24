@@ -178,7 +178,7 @@ export default function CompleteReadingPage() {
                   aria-label={`별점 ${n}점`}
                   onClick={() => setRating((prev) => (prev === n ? 0 : n))}
                   className={`text-2xl leading-none transition-colors ${
-                    n <= rating ? "text-gray-900" : "text-gray-300"
+                    n <= rating ? "text-yellow-400" : "text-gray-300"
                   }`}
                 >
                   {n <= rating ? "★" : "☆"}
