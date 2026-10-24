@@ -94,7 +94,7 @@ export default function HomePage() {
       {/* 상단: 좌측 로고 + 우측 책 등록 버튼 */}
       <div className="flex items-center justify-between">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="text42" width={200} style={{ width: 200 }} className="h-auto" />
+        <img src="/logo.png" alt="text42" width={140} style={{ width: 140 }} className="h-auto" />
         <RegisterBookButton />
       </div>
 
