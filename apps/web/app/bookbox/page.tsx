@@ -113,32 +113,46 @@ function ShelfView({ books }: { books: ShelfEntry[] }) {
   );
 }
 
-// ---------- 표지 그리드(세로) 뷰 ----------
-function GridView({ books }: { books: ShelfEntry[] }) {
+// 세로쌓기 좌우 어긋남 후보(대부분 가지런히, 일부만 살짝 어긋나게) — 책별 고정 시드로 선택
+const STACK_OFFSETS = [0, 0, 0, -8, 8, -5, 5, 0, 10, -10, 0];
+
+// ---------- 눕힌 책 한 권(세로쌓기용) ----------
+function FlatBook({ book, index }: { book: ShelfEntry; index: number }) {
+  const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
+  const width = 150 + (hashSeed(book.title) % 5) * 16; // 150~214, 책마다 폭이 조금씩 다름
+  const offset = STACK_OFFSETS[hashSeed(`${book.key}-off`) % STACK_OFFSETS.length];
+
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {books.map((book, i) => {
-        const image = book.coverImageUrl;
-        return image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={book.key}
-            src={image}
-            alt={book.title}
-            title={book.title}
-            className="aspect-[3/4] w-full rounded-md border border-gray-200 object-cover"
-          />
-        ) : (
-          <div
-            key={book.key}
-            title={book.title}
-            className="flex aspect-[3/4] w-full flex-col items-center justify-center rounded-md border p-2 text-center"
-            style={{ backgroundColor: SPINE_PASTELS[i % SPINE_PASTELS.length], borderColor: SPINE_INK, color: SPINE_INK }}
-          >
-            <span className="line-clamp-4 text-[11px] font-bold leading-tight">{book.title}</span>
-          </div>
-        );
-      })}
+    <div
+      title={book.title}
+      className="flex h-9 items-center justify-between rounded-md border px-3"
+      style={{
+        width,
+        backgroundColor: color,
+        borderColor: SPINE_INK,
+        color: SPINE_INK,
+        transform: offset ? `translateX(${offset}px)` : undefined,
+      }}
+    >
+      <span className="truncate text-[12px] font-bold">{book.title}</span>
+      {book.publisher && (
+        <span className="ml-2 shrink-0 text-[9px] font-bold opacity-80">{book.publisher}</span>
+      )}
+    </div>
+  );
+}
+
+// ---------- 세로쌓기 뷰 (책을 눕혀 위로 쌓기) ----------
+function StackView({ books }: { books: ShelfEntry[] }) {
+  return (
+    <div>
+      <div className="flex flex-col items-center gap-1.5 px-2">
+        {books.map((book, i) => (
+          <FlatBook key={book.key} book={book} index={i} />
+        ))}
+      </div>
+      {/* 바닥 */}
+      <div className="relative z-10 mt-0.5 h-3 w-full rounded-sm bg-[#D9D9D9]" />
     </div>
   );
 }
@@ -365,7 +379,7 @@ export default function BookBoxPage() {
         ) : viewMode === "가로" ? (
           <ShelfView books={books} />
         ) : (
-          <GridView books={books} />
+          <StackView books={books} />
         )}
       </div>
 
