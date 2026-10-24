@@ -165,7 +165,8 @@ export function BellIcon({ size = 26, ...props }: IconProps) {
 export function NavHomeIcon(props: IconProps) {
   return (
     <svg {...base(props)} aria-hidden>
-      <path d="M3 10 L12 3 L21 10 L21 21 L15 21 L15 15 L9 15 L9 21 L3 21 Z" />
+      {/* 뾰족한 지붕 + 가운데 좁고 긴 문 (디자인: 폭이 좁고 세로로 긴 집) */}
+      <path d="M6 11 L12 3 L18 11 L18 20.5 L13.5 20.5 L13.5 14.8 L10.5 14.8 L10.5 20.5 L6 20.5 Z" />
     </svg>
   );
 }
