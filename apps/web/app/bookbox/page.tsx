@@ -343,6 +343,12 @@ export default function BookBoxPage() {
           <BellIcon />
         </button>
       </header>
+
+      {/* 소개 문구 */}
+      <p className="mt-2 text-lg font-medium text-gray-500">
+        읽은 책을 나만의 책장에 담고, 친구들과 공유해 보세요.
+      </p>
+
       <div className="mt-3 border-b border-gray-900" />
 
       {/* 컨트롤 바: 기간 모드 · 보기 방식 · 공유 */}

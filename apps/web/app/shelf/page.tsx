@@ -400,6 +400,11 @@ export default function ShelfPage() {
         </div>
       </header>
 
+      {/* 소개 문구 */}
+      <p className="mt-2 px-5 text-lg font-medium text-gray-500">
+        읽은 책을 기록하고, 나만의 독서 로그를 쌓아보세요
+      </p>
+
       {/* 탭 */}
       <div className="mt-5 flex gap-6 border-b border-gray-200 px-5">
         {(["독서중", "완독책", "담아둔책"] as ShelfTab[]).map((t) => (
