@@ -175,7 +175,7 @@ function BookCard({
   const cover = (
     <div
       title={book.title}
-      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border-2 border-gray-900 bg-white"
+      className="flex aspect-[3/4] flex-col overflow-hidden rounded-md border border-gray-200 bg-white"
     >
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
