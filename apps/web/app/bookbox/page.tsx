@@ -428,7 +428,15 @@ export default function BookBoxPage() {
             )}
           </>
         ) : viewMode === "세로" ? (
-          <StackView books={books} />
+          <>
+            {/* 세로쌓기도 최대 10권까지만 표시한다. */}
+            <StackView books={books.slice(0, 10)} />
+            {books.length > 10 && (
+              <p className="mt-4 text-center text-xs text-gray-400">
+                책꽂이에는 최대 10권까지만 보여드려요.
+              </p>
+            )}
+          </>
         ) : (
           <GridView books={books} />
         )}
