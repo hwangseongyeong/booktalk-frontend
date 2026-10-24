@@ -438,7 +438,15 @@ export default function BookBoxPage() {
             )}
           </>
         ) : (
-          <GridView books={books} />
+          <>
+            {/* 펼치기(표지 그리드)도 최대 10권까지만 표시한다. */}
+            <GridView books={books.slice(0, 10)} />
+            {books.length > 10 && (
+              <p className="mt-4 text-center text-xs text-gray-400">
+                최대 10권까지만 보여드려요.
+              </p>
+            )}
+          </>
         )}
       </div>
 
