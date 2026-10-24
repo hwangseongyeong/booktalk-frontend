@@ -9,7 +9,8 @@ import { BottomNav } from "../../components/bottom-nav";
 
 // ---------- 파스텔 책등 팔레트 (디자인 색상) ----------
 const SPINE_PASTELS = ["#F7CF87", "#FFFEAC", "#FFFDE8", "#D8EAF6", "#E0F3C7"];
-const SPINE_INK = "#1E1E1E"; // 책등 글자·테두리
+const SPINE_INK = "#1E1E1E"; // 책등 글자
+const SPINE_BORDER = "#D1D5DB"; // 책등·책 테두리(옅은 회색)
 
 function hashSeed(seed: string) {
   let hash = 0;
@@ -51,9 +52,9 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
 function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
   const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
-  const tiltDeg = 7;
-  // 기울인 책의 윗부분이 옆 책을 침범하지 않도록, 기울기만큼 좌우 여백을 확보한다.
-  const leanPx = tilt ? Math.ceil(height * Math.sin((tiltDeg * Math.PI) / 180)) : 0;
+  const tiltDeg = -7; // 기울임 방향(윗부분이 왼쪽으로)
+  // 기운 책의 윗부분이 옆 책을 침범하지 않도록, 기운 쪽(왼쪽)에만 여백을 준다.
+  const leanPx = tilt ? Math.ceil(height * Math.abs(Math.sin((tiltDeg * Math.PI) / 180))) : 0;
   const maxChars = Math.max(2, Math.floor((height - 48) / 15));
   const shortTitle =
     book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
@@ -65,11 +66,10 @@ function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; til
       style={{
         height,
         backgroundColor: color,
-        borderColor: SPINE_INK,
+        borderColor: SPINE_BORDER,
         color: SPINE_INK,
         transform: tilt ? `rotate(${tiltDeg}deg)` : undefined,
         marginLeft: leanPx || undefined,
-        marginRight: leanPx || undefined,
       }}
     >
       <span className="flex flex-col items-center leading-[1.15]">
@@ -135,7 +135,7 @@ function FlatBook({ book, index }: { book: ShelfEntry; index: number }) {
       style={{
         width,
         backgroundColor: color,
-        borderColor: SPINE_INK,
+        borderColor: SPINE_BORDER,
         color: SPINE_INK,
         transform: offset ? `translateX(${offset}px)` : undefined,
       }}
@@ -186,7 +186,7 @@ function GridView({ books }: { books: ShelfEntry[] }) {
             className="flex aspect-[3/4] w-full flex-col items-center justify-center rounded-md border p-2 text-center"
             style={{
               backgroundColor: SPINE_PASTELS[i % SPINE_PASTELS.length],
-              borderColor: SPINE_INK,
+              borderColor: SPINE_BORDER,
               color: SPINE_INK,
             }}
           >
