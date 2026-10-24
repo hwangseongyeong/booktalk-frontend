@@ -189,6 +189,16 @@ export function NavRecordIcon(props: IconProps) {
   );
 }
 
+export function NavBoxIcon(props: IconProps) {
+  return (
+    <svg {...base(props)} aria-hidden>
+      <path d="M12 2.5 L20.5 7 L20.5 16.5 L12 21 L3.5 16.5 L3.5 7 Z" />
+      <path d="M3.5 7 L12 11.5 L20.5 7" />
+      <path d="M12 11.5 L12 21" />
+    </svg>
+  );
+}
+
 export function NavChatIcon(props: IconProps) {
   return (
     <svg {...base(props)} aria-hidden>

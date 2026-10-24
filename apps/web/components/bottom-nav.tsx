@@ -9,10 +9,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import {
+  NavBoxIcon,
   NavChatIcon,
   NavHomeIcon,
   NavMyIcon,
-  NavRecordIcon,
   NavShelfIcon,
 } from "./icons";
 
@@ -29,22 +29,22 @@ const ITEMS: NavItem[] = [
   { label: "홈", Icon: NavHomeIcon, href: "/", match: ["/"] },
   { label: "북로그", Icon: NavShelfIcon, href: "/shelf", match: ["/shelf"] },
   { label: "북메이트", Icon: NavChatIcon, href: "/community", match: ["/community"] },
-  { label: "북박스", Icon: NavRecordIcon, href: "/bookbox", match: ["/bookbox", "/books"] },
-  { label: "내정보", Icon: NavMyIcon, href: "/my", match: ["/my"] },
+  { label: "북박스", Icon: NavBoxIcon, href: "/bookbox", match: ["/bookbox", "/books"] },
+  { label: "내 정보", Icon: NavMyIcon, href: "/my", match: ["/my"] },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 flex h-16 w-full max-w-md -translate-x-1/2 items-stretch justify-around bg-ink">
+    <nav className="fixed bottom-0 left-1/2 z-50 flex h-16 w-full max-w-md -translate-x-1/2 items-stretch justify-around border-t border-gray-200 bg-white">
       {ITEMS.map(({ label, Icon, href, match }) => {
         const active = !!match?.some((p) => (p === "/" ? pathname === "/" : pathname.startsWith(p)));
         const tone = href === null
-          ? "text-white/30"
+          ? "text-gray-300"
           : active
-            ? "text-paper-pure"
-            : "text-white/45";
+            ? "text-gray-900"
+            : "text-gray-400";
         const inner = (
           <span className={`flex flex-1 flex-col items-center justify-center gap-0.5 ${tone}`}>
             <Icon size={22} />
