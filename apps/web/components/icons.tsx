@@ -173,10 +173,16 @@ export function NavHomeIcon(props: IconProps) {
 export function NavShelfIcon(props: IconProps) {
   return (
     <svg {...base(props)} aria-hidden>
-      <rect x="2" y="4" width="4" height="16" rx="1" />
-      <rect x="8" y="7" width="4" height="13" rx="1" />
-      <rect x="14" y="5" width="4" height="15" rx="1" />
-      <line x1="2" y1="21" x2="20" y2="21" />
+      {/* 선 책 2권 + 상단 표지선 */}
+      <rect x="3.3" y="6.5" width="4" height="13.5" rx="0.8" />
+      <line x1="3.3" y1="9.4" x2="7.3" y2="9.4" />
+      <rect x="8.3" y="5" width="4" height="15" rx="0.8" />
+      <line x1="8.3" y1="7.9" x2="12.3" y2="7.9" />
+      {/* 기울어진 세 번째 책 */}
+      <g transform="rotate(20 15.6 20)">
+        <rect x="13.6" y="6.5" width="4" height="13.5" rx="0.8" />
+        <line x1="13.6" y1="9.4" x2="17.6" y2="9.4" />
+      </g>
     </svg>
   );
 }
@@ -192,9 +198,14 @@ export function NavRecordIcon(props: IconProps) {
 export function NavBoxIcon(props: IconProps) {
   return (
     <svg {...base(props)} aria-hidden>
-      <path d="M12 2.5 L20.5 7 L20.5 16.5 L12 21 L3.5 16.5 L3.5 7 Z" />
-      <path d="M3.5 7 L12 11.5 L20.5 7" />
-      <path d="M12 11.5 L12 21" />
+      {/* 상자 몸통 */}
+      <path d="M12 2.6 L20.5 7 L20.5 16.6 L12 21 L3.5 16.6 L3.5 7 Z" />
+      {/* 윗면 모서리 */}
+      <path d="M3.5 7 L12 11.3 L20.5 7" />
+      {/* 윗면 뚜껑 이음선(두 쪽 플랩) */}
+      <path d="M12 2.6 L12 11.3" />
+      {/* 앞면 테이프 심 */}
+      <path d="M12 11.3 L12 21" />
     </svg>
   );
 }

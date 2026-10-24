@@ -37,7 +37,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 flex h-16 w-full max-w-md -translate-x-1/2 items-stretch justify-around border-t border-gray-200 bg-white">
+    <nav className="fixed bottom-0 left-1/2 z-50 flex h-20 w-full max-w-md -translate-x-1/2 items-stretch justify-around border-t border-gray-200 bg-white">
       {ITEMS.map(({ label, Icon, href, match }) => {
         const active = !!match?.some((p) => (p === "/" ? pathname === "/" : pathname.startsWith(p)));
         const tone = href === null
@@ -46,9 +46,9 @@ export function BottomNav() {
             ? "text-gray-900"
             : "text-gray-400";
         const inner = (
-          <span className={`flex flex-1 flex-col items-center justify-center gap-0.5 ${tone}`}>
-            <Icon size={22} />
-            <span className="text-[10px] font-bold">{label}</span>
+          <span className={`flex flex-1 flex-col items-center justify-center gap-1.5 ${tone}`}>
+            <Icon size={28} />
+            <span className="text-[11px] font-bold">{label}</span>
           </span>
         );
 
