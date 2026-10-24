@@ -131,7 +131,7 @@ function CameraCaptureInner() {
     await startStream(facing);
   }
 
-  // 촬영본 업로드 → 완료 후 북메이트로
+  // 촬영본 업로드 → 기록 작성 화면으로 사진 URL 전달
   async function usePhoto() {
     if (!shot) return;
     setPhase("uploading");
@@ -139,8 +139,7 @@ function CameraCaptureInner() {
       const file = new File([shot.blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
       const { url } = await apiClient.uploadImage(file);
       URL.revokeObjectURL(shot.url);
-      window.alert("사진을 업로드했어요.\n" + url);
-      router.push("/community");
+      router.push(`/community/record?image=${encodeURIComponent(url)}`);
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "업로드에 실패했어요.");
       setPhase("captured");

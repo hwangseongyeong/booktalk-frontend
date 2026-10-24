@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiClient, type Meeting } from "@booktalk/api-client";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  apiClient,
+  resolveAssetUrl,
+  type BookNote,
+  type Meeting,
+} from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { formatDday } from "../../lib/meetings";
 import { BottomNav } from "../../components/bottom-nav";
@@ -11,6 +16,47 @@ import { BellIcon, PlusIcon } from "../../components/icons";
 import { ReadingModeBadge, MeetingCover } from "../../components/community";
 
 type BookmateTab = "함께 북톡" | "혼자 기록";
+
+/** 혼자 기록 작성일 표기(예: 2026.10.24) */
+function formatNoteDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
+
+/** 혼자 기록 카드 */
+function BookNoteCard({ note, onDelete }: { note: BookNote; onDelete: (id: number) => void }) {
+  const imageSrc = resolveAssetUrl(note.imageUrl);
+  return (
+    <div className="flex gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+      {imageSrc && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={imageSrc} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-xs text-gray-400">{formatNoteDate(note.createdAt)}</span>
+          <button
+            onClick={() => onDelete(note.id)}
+            aria-label="삭제"
+            className="shrink-0 text-xs text-gray-300 hover:text-gray-500"
+          >
+            삭제
+          </button>
+        </div>
+        {note.book && (
+          <p className="mt-0.5 truncate text-xs font-bold text-gray-500">{note.book.title}</p>
+        )}
+        {note.content && (
+          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-900">
+            {note.content}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** 목록 카드 */
 function MeetingListCard({ meeting }: { meeting: Meeting }) {
@@ -68,12 +114,27 @@ function EmptyState({
 }
 
 export default function CommunityPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-white" />}>
+      <CommunityPageInner />
+    </Suspense>
+  );
+}
+
+function CommunityPageInner() {
   const ready = useRequireAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<BookmateTab>("함께 북톡");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<BookmateTab>(
+    searchParams.get("tab") === "solo" ? "혼자 기록" : "함께 북톡",
+  );
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [notes, setNotes] = useState<BookNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   // 함께 북톡 = 참여 중인 모임 목록
   useEffect(() => {
@@ -92,6 +153,37 @@ export default function CommunityPage() {
 
     return () => { cancelled = true; };
   }, [ready]);
+
+  // 혼자 기록 목록
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setNotesLoading(true);
+    setNotesError(null);
+
+    apiClient
+      .getMyBookNotes()
+      .then((list) => { if (!cancelled) setNotes(list); })
+      .catch((e) => {
+        if (!cancelled) setNotesError(e instanceof Error ? e.message : "기록을 불러오지 못했어요.");
+      })
+      .finally(() => { if (!cancelled) setNotesLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [ready]);
+
+  // 혼자 기록 삭제
+  async function handleDeleteNote(id: number) {
+    if (!window.confirm("이 기록을 삭제할까요?")) return;
+    const prev = notes;
+    setNotes((list) => list.filter((n) => n.id !== id)); // 낙관적 제거
+    try {
+      await apiClient.deleteBookNote(id);
+    } catch {
+      setNotes(prev); // 실패 시 복구
+      window.alert("삭제에 실패했어요. 다시 시도해주세요.");
+    }
+  }
 
   // 초대 코드로 참여하기 — 코드 입력 후 초대 화면으로 이동
   function handleJoinByCode() {
@@ -132,7 +224,7 @@ export default function CommunityPage() {
       <div className="mt-5 flex border-b border-gray-200">
         {(["함께 북톡", "혼자 기록"] as BookmateTab[]).map((t) => {
           const active = tab === t;
-          const count = t === "함께 북톡" ? meetings.length : 0;
+          const count = t === "함께 북톡" ? meetings.length : notes.length;
           return (
             <button
               key={t}
@@ -171,6 +263,16 @@ export default function CommunityPage() {
               />
             </div>
           )
+        ) : notesLoading ? (
+          <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
+        ) : notesError ? (
+          <p className="py-16 text-center text-sm text-red-600">{notesError}</p>
+        ) : notes.length > 0 ? (
+          <div className="mt-5 flex flex-col gap-3">
+            {notes.map((n) => (
+              <BookNoteCard key={n.id} note={n} onDelete={handleDeleteNote} />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-1 items-center justify-center py-10">
             <EmptyState
@@ -203,7 +305,7 @@ export default function CommunityPage() {
               onClick={() => router.push("/community/camera")}
               className="flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
             >
-              첫 기록 남기기
+              {notes.length > 0 ? "기록 남기기" : "첫 기록 남기기"}
             </button>
           )}
         </div>

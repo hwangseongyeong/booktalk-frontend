@@ -105,6 +105,16 @@ export type MonthlyShelf = {
   books: ShelfBookItem[];
 };
 
+// ---------- 혼자 기록 타입 ----------
+/** 혼자 기록. 책(book)은 선택이며, 사진(imageUrl)·글(content) 중 하나 이상이 있다. */
+export type BookNote = {
+  id: number;
+  book: Book | null;
+  imageUrl: string | null;
+  content: string | null;
+  createdAt: string;
+};
+
 // ---------- 모임(소통) 타입 ----------
 /** 함께 읽기 / 각자 읽기 */
 export type ReadingMode = "TOGETHER" | "SOLO";
@@ -494,6 +504,21 @@ export const apiClient = {
   /** 독서중 취소 — 독서 기록을 삭제한다(독서중 목록에서 제거) */
   cancelReadingRecord: (id: number) =>
     request<void>(`/reading-records/${id}`, { method: "DELETE" }),
+
+  // ---------- 혼자 기록 ----------
+  /** 내 혼자 기록 목록(최신순) */
+  getMyBookNotes: () => request<BookNote[]>("/book-notes"),
+
+  /** 혼자 기록 작성. 사진(imageUrl)·글(content) 중 하나 이상 필요, bookId는 선택. */
+  createBookNote: (payload: { bookId?: number; imageUrl?: string; content?: string }) =>
+    request<BookNote>("/book-notes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  /** 혼자 기록 삭제 */
+  deleteBookNote: (id: number) =>
+    request<void>(`/book-notes/${id}`, { method: "DELETE" }),
 
   // ---------- 서재 ----------
   getMonthlyShelf: (yearMonth?: string) =>
