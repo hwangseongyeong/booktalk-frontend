@@ -103,6 +103,7 @@ export default function HomePage() {
         <br />
         놀고 있나요?
       </h1>
+      <p className="mt-2 text-sm text-gray-500">책과 나를 이어주는 텍스트사이</p>
 
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
