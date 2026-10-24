@@ -302,7 +302,7 @@ function CommunityPageInner() {
             </>
           ) : (
             <button
-              onClick={() => router.push("/community/camera")}
+              onClick={() => router.push("/community/record")}
               className="flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
             >
               {notes.length > 0 ? "기록 남기기" : "첫 기록 남기기"}
