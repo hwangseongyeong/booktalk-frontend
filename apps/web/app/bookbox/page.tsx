@@ -47,10 +47,14 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
   };
 }
 
+// 책등 기울기 후보(대부분 반듯하게, 일부만 좌우로 기움) — 책별 고정 시드로 선택
+const TILT_ANGLES = [0, 0, 0, 0, -5, 5, -7, 6, -4, 0, 0, 7];
+
 // ---------- 세워둔 책등 (파스텔 + 세로 제목 + 출판사) ----------
-function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
+function BookSpine({ book, index }: { book: ShelfEntry; index: number }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
   const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
+  const tiltDeg = TILT_ANGLES[hashSeed(`${book.key}-tilt`) % TILT_ANGLES.length];
   const maxChars = Math.max(2, Math.floor((height - 48) / 15));
   const shortTitle =
     book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
@@ -64,7 +68,7 @@ function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; til
         backgroundColor: color,
         borderColor: SPINE_INK,
         color: SPINE_INK,
-        transform: tilt ? "rotate(7deg)" : undefined,
+        transform: tiltDeg ? `rotate(${tiltDeg}deg)` : undefined,
       }}
     >
       <span className="flex flex-col items-center leading-[1.15]">
@@ -99,7 +103,7 @@ function ShelfView({ books }: { books: ShelfEntry[] }) {
       <div className="flex items-end justify-center gap-1.5 overflow-x-auto px-2">
         <Bookend />
         {books.map((book, i) => (
-          <BookSpine key={book.key} book={book} index={i} tilt={i === books.length - 1 && books.length > 1} />
+          <BookSpine key={book.key} book={book} index={i} />
         ))}
         <Bookend />
       </div>
