@@ -98,7 +98,7 @@ export default function HomePage() {
         <RegisterBookButton />
       </div>
 
-      <h1 className="mt-1 text-3xl font-bold leading-snug text-gray-900">
+      <h1 className="mt-5 text-3xl font-bold leading-snug text-gray-900">
         지금은 어떤 책과
         <br />
         놀고 있나요?
