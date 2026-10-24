@@ -429,7 +429,7 @@ export default function BookBoxPage() {
             <ShelfView books={books.slice(0, 10)} />
             {books.length > 10 && (
               <p className="mt-4 text-center text-xs text-gray-400">
-                책꽂이에는 최대 10권까지만 보여드려요.
+                책장에는 최근에 읽은 책 10권이 보여져요
               </p>
             )}
           </>
@@ -439,7 +439,7 @@ export default function BookBoxPage() {
             <StackView books={books.slice(0, 10)} />
             {books.length > 10 && (
               <p className="mt-4 text-center text-xs text-gray-400">
-                책꽂이에는 최대 10권까지만 보여드려요.
+                책장에는 최근에 읽은 책 10권이 보여져요
               </p>
             )}
           </>
@@ -449,7 +449,7 @@ export default function BookBoxPage() {
             <GridView books={books.slice(0, 10)} />
             {books.length > 10 && (
               <p className="mt-4 text-center text-xs text-gray-400">
-                최대 10권까지만 보여드려요.
+                책장에는 최근에 읽은 책 10권이 보여져요
               </p>
             )}
           </>
