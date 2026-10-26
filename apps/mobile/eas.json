@@ -19,16 +19,16 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://REPLACE-ME.example.com/api/v1",
-        "EXPO_PUBLIC_WEB_BASE_URL": "https://REPLACE-ME.example.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.booktalk.io.kr/api/v1",
+        "EXPO_PUBLIC_WEB_BASE_URL": "https://booktalk.io.kr"
       }
     },
     "production": {
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://REPLACE-ME.example.com/api/v1",
-        "EXPO_PUBLIC_WEB_BASE_URL": "https://REPLACE-ME.example.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.booktalk.io.kr/api/v1",
+        "EXPO_PUBLIC_WEB_BASE_URL": "https://booktalk.io.kr"
       }
     }
   },
