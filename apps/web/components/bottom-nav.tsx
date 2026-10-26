@@ -31,7 +31,10 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 flex h-20 w-full max-w-md -translate-x-1/2 items-stretch justify-around border-t border-gray-200 bg-white">
+    <nav
+      data-bottom-nav
+      className="fixed bottom-0 left-1/2 z-50 flex h-20 w-full max-w-md -translate-x-1/2 items-stretch justify-around border-t border-gray-200 bg-white"
+    >
       {ITEMS.map(({ label, icon, href, match }) => {
         const active = !!match?.some((p) => (p === "/" ? pathname === "/" : pathname.startsWith(p)));
         const opacity = href === null ? "opacity-25" : active ? "opacity-100" : "opacity-40";

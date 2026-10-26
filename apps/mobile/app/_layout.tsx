@@ -30,5 +30,6 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
+  // (tabs) 그룹이 네이티브 탭바를, login은 탭 밖 전체화면으로 렌더된다.
   return <Stack screenOptions={{ headerShown: false }} />;
 }
