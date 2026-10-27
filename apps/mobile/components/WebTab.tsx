@@ -20,11 +20,37 @@ const WEB_BASE_URL =
 const ACCESS_KEY = "booktalk_access_token";
 const REFRESH_KEY = "booktalk_refresh_token";
 
+// 웹 하단바(data-bottom-nav)와 하단 여백(pb-24)을 숨기는 <style>을 head에 심는 스크립트.
+// head가 생기는 대로(없으면 observer로 대기) 1회 삽입하고, SPA 이동에도 head에 남아 유지된다.
+// 콘텐츠 로드 전/후 양쪽에서 호출해도 getElementById 가드로 중복 삽입되지 않는다.
+const HIDE_WEB_NAV_SCRIPT = `
+  (function () {
+    try {
+      var id = "bt-embedded-style";
+      function inject() {
+        if (document.getElementById(id)) return true;
+        var head = document.head || document.getElementsByTagName("head")[0];
+        if (!head) return false;
+        var s = document.createElement("style");
+        s.id = id;
+        s.textContent =
+          "nav[data-bottom-nav]{display:none !important;}" +
+          ".pb-24{padding-bottom:0 !important;}";
+        head.appendChild(s);
+        return true;
+      }
+      if (!inject()) {
+        var obs = new MutationObserver(function () { if (inject()) obs.disconnect(); });
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      }
+    } catch (e) {}
+  })();
+  true;
+`;
+
 /**
- * 콘텐츠 로드 전에 실행할 주입 스크립트:
- * 1) 네이티브 JWT를 localStorage에 심어 웹 로그인 상태를 공유한다.
- * 2) 웹 하단바(data-bottom-nav)와 하단 여백(pb-24)을 숨기는 <style>을 넣어
- *    네이티브 탭바와 이중으로 겹치지 않게 한다. SPA 내부 이동에도 유지된다.
+ * 콘텐츠 로드 전에 실행할 주입 스크립트: 네이티브 JWT를 localStorage에 심어 웹 로그인 상태를 공유한다.
+ * (하단바 숨김은 HIDE_WEB_NAV_SCRIPT가 로드 전/후 양쪽에서 담당)
  */
 function buildInjection(): string {
   const access = JSON.stringify(authStorage.getAccessToken());
@@ -35,19 +61,8 @@ function buildInjection(): string {
         if (${access} != null) localStorage.setItem(${JSON.stringify(ACCESS_KEY)}, ${access});
         if (${refresh} != null) localStorage.setItem(${JSON.stringify(REFRESH_KEY)}, ${refresh});
       } catch (e) {}
-      try {
-        var id = "bt-embedded-style";
-        if (!document.getElementById(id)) {
-          var s = document.createElement("style");
-          s.id = id;
-          s.textContent =
-            "nav[data-bottom-nav]{display:none !important;}" +
-            ".pb-24{padding-bottom:0 !important;}";
-          (document.head || document.documentElement).appendChild(s);
-        }
-      } catch (e) {}
     })();
-    true;
+    ${HIDE_WEB_NAV_SCRIPT}
   `;
 }
 
@@ -101,6 +116,7 @@ export default function WebTab({ path }: Props) {
         ref={webRef}
         source={source}
         injectedJavaScriptBeforeContentLoaded={injected}
+        injectedJavaScript={HIDE_WEB_NAV_SCRIPT}
         onNavigationStateChange={handleNavChange}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
