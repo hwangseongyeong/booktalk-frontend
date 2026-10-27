@@ -30,6 +30,9 @@
             "extraMavenRepos": [
               "https://devrepo.kakao.com/nexus/content/groups/public/"
             ]
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
           }
         }
       ]
