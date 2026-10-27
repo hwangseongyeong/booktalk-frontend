@@ -103,6 +103,10 @@ export default function WebTab({ path }: Props) {
 
   function handleNavChange(nav: WebViewNavigation) {
     canGoBack.current = nav.canGoBack;
+    // SPA 내부 이동(예: '/' → '/books')에서는 onLoadEnd가 호출되지 않아
+    // onLoadStart로 켜둔 스피너가 그대로 남는다. 네비게이션 상태의 loading 플래그로
+    // 스피너를 내려, 책 등록 등 Link 이동 화면이 스피너에 가려지지 않게 한다.
+    setLoading(nav.loading);
     // 웹에서 로그아웃/세션만료로 /login으로 가면 네이티브 토큰도 비우고 로그인 화면으로.
     if (nav.url.includes("/login")) {
       apiClient.logout();
