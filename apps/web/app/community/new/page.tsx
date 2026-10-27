@@ -32,8 +32,8 @@ export default function CreateMeetingPage() {
 
   const canSubmit = !!book && name.trim().length > 0 && !submitting;
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSearch(e?: React.SyntheticEvent) {
+    e?.preventDefault();
     if (!query.trim()) return;
     setSearching(true);
     setSearchError(null);
@@ -161,7 +161,8 @@ export default function CreateMeetingPage() {
                 className="min-w-0 flex-1 rounded-full border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-gray-900"
               />
               <button
-                type="submit"
+                type="button"
+                onClick={handleSearch}
                 className="shrink-0 rounded-full bg-gray-900 px-5 py-2.5 text-sm font-bold text-white"
               >
                 검색

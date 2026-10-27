@@ -60,8 +60,8 @@ export default function BooksPage() {
     }
   }
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSearch(e?: React.SyntheticEvent) {
+    e?.preventDefault();
     setSearched(true);
     await loadBooks(query);
   }
@@ -138,7 +138,8 @@ export default function BooksPage() {
           placeholder="제목, 저자로 검색 (카카오 통합검색)"
         />
         <PillButton
-          type="submit"
+          type="button"
+          onClick={handleSearch}
           fullWidth={false}
           size="sm"
           className="shrink-0 px-5 py-3.5 text-base"
