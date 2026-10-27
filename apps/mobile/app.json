@@ -35,7 +35,8 @@
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "./plugins/withPodMinDeploymentTarget"
     ],
     "experiments": {
       "typedRoutes": true
