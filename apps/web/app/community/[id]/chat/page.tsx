@@ -324,7 +324,7 @@ export default function MeetingChatPage() {
   return (
     <main className="mx-auto flex h-screen max-w-md flex-col bg-[#eef1f6]">
       {/* 헤더 */}
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200/80 bg-white/90 px-3 py-2.5 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200/80 bg-white/90 px-3 py-3 backdrop-blur">
         <button
           onClick={() => router.back()}
           aria-label="뒤로"
@@ -337,13 +337,13 @@ export default function MeetingChatPage() {
             title={header.name}
             coverImageUrl={header.coverImageUrl ?? header.spineImageUrl}
             primaryColor={header.primaryColor}
-            className="h-10 w-7 shrink-0"
+            className="h-20 w-14 shrink-0"
           />
         )}
         {/* 모임명 클릭 시 모임 소개 페이지로 이동 */}
         <Link href={`/community/${meetingId}`} className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-bold text-gray-900">{header?.name ?? "대화방"}</h1>
-          <p className="text-[11px] text-gray-400">
+          <h1 className="truncate text-lg font-bold text-gray-900">{header?.name ?? "대화방"}</h1>
+          <p className="text-xs text-gray-400">
             {header ? `${header.memberCount}명 참여중 · 정보 보기` : "참여자 대화방"}
           </p>
         </Link>
