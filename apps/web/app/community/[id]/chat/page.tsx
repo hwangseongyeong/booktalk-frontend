@@ -372,8 +372,8 @@ export default function MeetingChatPage() {
         </div>
       )}
 
-      {/* 메시지 목록 */}
-      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+      {/* 메시지 목록 (min-h-0: flex 자식이 줄어들어 전체가 커지지 않고 이 영역만 내부 스크롤) */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
         {loading ? (
           <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
         ) : error ? (
