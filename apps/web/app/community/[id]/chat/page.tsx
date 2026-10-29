@@ -322,7 +322,7 @@ export default function MeetingChatPage() {
   if (!ready) return null;
 
   return (
-    <main className="fixed inset-0 mx-auto flex max-w-md flex-col bg-[#eef1f6]">
+    <main className="mx-auto flex h-screen max-w-md flex-col bg-[#eef1f6]">
       {/* 헤더 */}
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200/80 bg-white/90 px-3 py-2.5 backdrop-blur">
         <button
@@ -372,8 +372,8 @@ export default function MeetingChatPage() {
         </div>
       )}
 
-      {/* 메시지 목록 (min-h-0: flex 자식이 줄어들어 전체가 커지지 않고 이 영역만 내부 스크롤) */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+      {/* 메시지 목록 */}
+      <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
         {loading ? (
           <p className="py-10 text-center text-sm text-gray-400">불러오는 중...</p>
         ) : error ? (
@@ -559,7 +559,7 @@ export default function MeetingChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="메시지를 입력하세요"
-              className="flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:bg-gray-50 focus:ring-2 focus:ring-gray-900/10"
+              className="min-w-0 flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:bg-gray-50 focus:ring-2 focus:ring-gray-900/10"
             />
             <button
               type="submit"
