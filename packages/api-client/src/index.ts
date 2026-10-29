@@ -397,6 +397,63 @@ async function request<T>(path: string, options?: RequestInit, retry = true): Pr
   return body.data;
 }
 
+// ---------- 어드민 타입 ----------
+export type AdminMetrics = {
+  totalUsers: number;
+  newUsersToday: number;
+  newUsers7d: number;
+  totalBooks: number;
+  readingRecords: number;
+  completedRecords: number;
+  wishlistRecords: number;
+  totalMeetings: number;
+  recruitingMeetings: number;
+  ongoingMeetings: number;
+  closedMeetings: number;
+  totalBookNotes: number;
+  totalChatMessages: number;
+};
+export type AdminPageResult<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+export type AdminUserListItem = {
+  id: number;
+  nickname: string;
+  email: string | null;
+  profileImageUrl: string | null;
+  oauthProvider: string;
+  role: string;
+  suspended: boolean;
+  createdAt: string;
+};
+export type AdminUserDetail = AdminUserListItem & {
+  profileColor: string | null;
+  onboardingCompleted: boolean;
+  readingRecordCount: number;
+  bookNoteCount: number;
+};
+export type AdminBookNoteItem = {
+  id: number;
+  userId: number;
+  userNickname: string;
+  content: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+};
+export type AdminChatMessageItem = {
+  id: number;
+  meetingId: number;
+  userId: number;
+  userNickname: string;
+  content: string;
+  deleted: boolean;
+  createdAt: string;
+};
+
 export const apiClient = {
   // ---------- 인증 ----------
   loginWithOAuth: (
@@ -599,4 +656,24 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify({ emoji }),
     }),
+
+  // ---------- 어드민 (ADMIN 역할 전용. 비-관리자는 403) ----------
+  getAdminMetrics: () => request<AdminMetrics>("/admin/metrics"),
+
+  getAdminUsers: (query?: string, page = 0, size = 20) =>
+    request<AdminPageResult<AdminUserListItem>>(
+      `/admin/users?page=${page}&size=${size}${query ? `&query=${encodeURIComponent(query)}` : ""}`
+    ),
+  getAdminUserDetail: (id: number) => request<AdminUserDetail>(`/admin/users/${id}`),
+  suspendUser: (id: number) => request<void>(`/admin/users/${id}/suspend`, { method: "PATCH" }),
+  unsuspendUser: (id: number) => request<void>(`/admin/users/${id}/unsuspend`, { method: "PATCH" }),
+  grantAdmin: (id: number) => request<void>(`/admin/users/${id}/grant-admin`, { method: "PATCH" }),
+  revokeAdmin: (id: number) => request<void>(`/admin/users/${id}/revoke-admin`, { method: "PATCH" }),
+
+  getAdminBookNotes: (page = 0, size = 20) =>
+    request<AdminPageResult<AdminBookNoteItem>>(`/admin/book-notes?page=${page}&size=${size}`),
+  deleteAdminBookNote: (id: number) => request<void>(`/admin/book-notes/${id}`, { method: "DELETE" }),
+  getAdminMeetingMessages: (meetingId: number) =>
+    request<AdminChatMessageItem[]>(`/admin/meetings/${meetingId}/messages`),
+  deleteAdminChatMessage: (id: number) => request<void>(`/admin/chat-messages/${id}`, { method: "DELETE" }),
 };
