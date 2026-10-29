@@ -322,7 +322,7 @@ export default function MeetingChatPage() {
   if (!ready) return null;
 
   return (
-    <main className="mx-auto flex h-screen h-[100dvh] max-w-md flex-col bg-[#eef1f6]">
+    <main className="fixed inset-0 mx-auto flex max-w-md flex-col bg-[#eef1f6]">
       {/* 헤더 */}
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200/80 bg-white/90 px-3 py-2.5 backdrop-blur">
         <button
