@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiClient, type MeetingDetail, type MeetingMember } from "@booktalk/api-client";
@@ -242,55 +241,24 @@ export default function MeetingDetailPage() {
             </div>
           </section>
 
-          {/* 대화방 입장 (멤버 전용) */}
-          {isMember && (
-            <div className="px-5">
-              <Link
-                href={`/community/${meeting.id}/chat`}
-                className="flex items-center justify-center gap-2 rounded-full bg-[#F7EF82] py-3.5 text-[15px] font-bold text-gray-900 transition-[filter] hover:brightness-95"
-              >
-                대화방 입장
-              </Link>
-            </div>
-          )}
-
           {/* 하단 고정 액션 */}
           <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 bg-white px-5 pb-6 pt-3">
             {meeting.status === "CLOSED" ? (
               <p className="py-2 text-center text-sm text-gray-400">종료된 모임이에요.</p>
-            ) : meeting.isHost ? (
-              <div className="flex items-center justify-center gap-3 text-sm font-bold text-gray-500">
-                <button
-                  onClick={() => window.alert("준비 중이에요.")}
-                  className="transition-colors hover:text-gray-900"
-                >
-                  모임장 넘기기
-                </button>
-                <span className="text-gray-300" aria-hidden>|</span>
-                <button
-                  onClick={() =>
-                    run("close", () => apiClient.closeMeeting(meeting.id), {
-                      confirmMessage: "모임을 끝낼까요? 끝내면 되돌릴 수 없어요.",
-                    })
-                  }
-                  disabled={action !== null}
-                  className="transition-colors hover:text-gray-900 disabled:opacity-40"
-                >
-                  {action === "close" ? "종료 중..." : "모임 끝내기"}
-                </button>
-              </div>
-            ) : meeting.joined ? (
+            ) : isMember ? (
               <button
                 onClick={() =>
                   run("leave", () => apiClient.leaveMeeting(meeting.id), {
-                    confirmMessage: "모임에서 나갈까요?",
+                    confirmMessage: meeting.isHost
+                      ? "모임에서 나갈까요? 모임장이 나가면 모임이 종료돼요."
+                      : "모임에서 나갈까요?",
                     backOnDone: true,
                   })
                 }
                 disabled={action !== null}
                 className="w-full rounded-full border border-gray-300 py-3.5 text-[15px] font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-40"
               >
-                {action === "leave" ? "처리 중..." : "모임 나가기"}
+                {action === "leave" ? "처리 중..." : "책모임 나가기"}
               </button>
             ) : meeting.visibility === "PRIVATE" ? (
               <p className="py-2 text-center text-sm text-gray-400">초대 링크로만 참여할 수 있어요.</p>

@@ -62,7 +62,7 @@ function BookNoteCard({ note, onDelete }: { note: BookNote; onDelete: (id: numbe
 function MeetingListCard({ meeting }: { meeting: Meeting }) {
   return (
     <Link
-      href={`/community/${meeting.id}`}
+      href={`/community/${meeting.id}/chat`}
       className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
     >
       <MeetingCover

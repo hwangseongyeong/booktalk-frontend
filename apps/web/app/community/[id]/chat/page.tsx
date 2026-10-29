@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -8,6 +9,7 @@ import {
   meetingChatSocketUrl,
   type MeetingChatMessage,
   type MeetingChatReaction,
+  type MeetingMember,
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../../../lib/useRequireAuth";
 import { Avatar } from "../../../../components/ui";
@@ -20,6 +22,7 @@ type ChatHeaderInfo = {
   spineImageUrl: string | null;
   primaryColor: string | null;
   memberCount: number;
+  members: MeetingMember[];
 };
 
 // JWT access token의 sub(=내 userId)를 디코드한다. 실패 시 null → mine은 서버 값/false로 폴백.
@@ -196,6 +199,7 @@ export default function MeetingChatPage() {
             spineImageUrl: m.book.spineImageUrl,
             primaryColor: m.book.primaryColor,
             memberCount: m.currentMemberCount,
+            members: m.members,
           });
       },
       () => {},
@@ -336,12 +340,13 @@ export default function MeetingChatPage() {
             className="h-10 w-7 shrink-0"
           />
         )}
-        <div className="min-w-0 flex-1">
+        {/* 모임명 클릭 시 모임 소개 페이지로 이동 */}
+        <Link href={`/community/${meetingId}`} className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-bold text-gray-900">{header?.name ?? "대화방"}</h1>
           <p className="text-[11px] text-gray-400">
-            {header ? `${header.memberCount}명 참여중` : "참여자 대화방"}
+            {header ? `${header.memberCount}명 참여중 · 정보 보기` : "참여자 대화방"}
           </p>
-        </div>
+        </Link>
         <button
           onClick={() => window.alert("준비 중이에요.")}
           className="shrink-0 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-900 transition-colors hover:bg-gray-50"
@@ -349,6 +354,23 @@ export default function MeetingChatPage() {
           다음 책 →
         </button>
       </header>
+
+      {/* 참여자 */}
+      {header && header.members.length > 0 && (
+        <div className="flex items-center gap-3 overflow-x-auto border-b border-gray-200/80 bg-white px-3 py-2">
+          {header.members.map((m) => (
+            <div key={m.userId} className="flex w-11 shrink-0 flex-col items-center gap-0.5">
+              <Avatar
+                nickname={m.nickname}
+                src={m.profileImageUrl}
+                color={m.profileColor ?? undefined}
+                size={34}
+              />
+              <span className="w-full truncate text-center text-[10px] text-gray-500">{m.nickname}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 메시지 목록 */}
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
