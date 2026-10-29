@@ -125,6 +125,9 @@ export default function WebTab({ path }: Props) {
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
         originWhitelist={["*"]}
+        // 카카오 프로필 이미지가 http URL이라, https 페이지(WebView)에서 Android 기본값이면
+        // mixed content로 차단되어 안 보인다. compatibility로 http 이미지 로드를 허용한다.
+        mixedContentMode="compatibility"
         sharedCookiesEnabled
         domStorageEnabled
         startInLoadingState
