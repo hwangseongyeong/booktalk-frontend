@@ -19,8 +19,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.booktalk.io.kr/api/v1",
-        "EXPO_PUBLIC_WEB_BASE_URL": "https://booktalk.io.kr",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.text42.app/api/v1",
+        "EXPO_PUBLIC_WEB_BASE_URL": "https://text42.app",
         "EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY": "22927273901a8cd934b3a57a53463c16"
       }
     },
@@ -31,8 +31,8 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.booktalk.io.kr/api/v1",
-        "EXPO_PUBLIC_WEB_BASE_URL": "https://booktalk.io.kr",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.text42.app/api/v1",
+        "EXPO_PUBLIC_WEB_BASE_URL": "https://text42.app",
         "EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY": "22927273901a8cd934b3a57a53463c16"
       }
     }
