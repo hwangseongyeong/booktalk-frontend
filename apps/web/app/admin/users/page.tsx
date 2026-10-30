@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient, type AdminUserListItem } from "@booktalk/api-client";
 
@@ -82,8 +83,10 @@ export default function AdminUsersPage() {
               items.map((u) => (
                 <tr key={u.id} className="border-b border-gray-100 last:border-0">
                   <td className="px-4 py-3">
-                    <div className="font-medium">{u.nickname}</div>
-                    <div className="text-xs text-gray-400">{u.email ?? "이메일 없음"}</div>
+                    <Link href={`/admin/users/${u.id}`} className="group">
+                      <div className="font-medium group-hover:underline">{u.nickname}</div>
+                      <div className="text-xs text-gray-400">{u.email ?? "이메일 없음"}</div>
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{u.oauthProvider}</td>
                   <td className="px-4 py-3">
