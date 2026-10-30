@@ -25,20 +25,43 @@ function formatNoteDate(iso: string): string {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
 }
 
-/** 혼자 북톡 카드 */
-function BookNoteCard({ note, onDelete }: { note: BookNote; onDelete: (id: number) => void }) {
-  const imageSrc = resolveAssetUrl(note.imageUrl);
+/** 혼자 북톡 카드 — 썸네일은 책표지, 클릭하면 이미지+글 상세 모달 */
+function BookNoteCard({
+  note,
+  onOpen,
+  onDelete,
+}: {
+  note: BookNote;
+  onOpen: (note: BookNote) => void;
+  onDelete: (id: number) => void;
+}) {
   return (
-    <div className="flex gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-      {imageSrc && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={imageSrc} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
-      )}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(note)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(note);
+        }
+      }}
+      className="flex cursor-pointer gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+    >
+      <MeetingCover
+        title={note.book?.title ?? ""}
+        coverImageUrl={note.book?.coverImageUrl ?? note.book?.spineImageUrl ?? null}
+        primaryColor={note.book?.primaryColor ?? null}
+        className="h-20 w-14 shrink-0"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <span className="text-xs text-gray-400">{formatNoteDate(note.createdAt)}</span>
           <button
-            onClick={() => onDelete(note.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(note.id);
+            }}
             aria-label="삭제"
             className="shrink-0 text-xs text-gray-300 hover:text-gray-500"
           >
@@ -46,10 +69,49 @@ function BookNoteCard({ note, onDelete }: { note: BookNote; onDelete: (id: numbe
           </button>
         </div>
         {note.book && (
-          <p className="mt-0.5 truncate text-xs font-bold text-gray-500">{note.book.title}</p>
+          <p className="mt-0.5 truncate text-sm font-bold text-gray-900">{note.book.title}</p>
         )}
         {note.content && (
-          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-900">
+          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-400">{note.content}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** 혼자 북톡 상세 모달 — 업로드한 이미지와 전체 글을 보여준다 */
+function BookNoteDetailModal({ note, onClose }: { note: BookNote; onClose: () => void }) {
+  const imageSrc = resolveAssetUrl(note.imageUrl);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            {note.book && (
+              <p className="truncate text-base font-bold text-gray-900">{note.book.title}</p>
+            )}
+            <p className="mt-0.5 text-xs text-gray-400">{formatNoteDate(note.createdAt)}</p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="닫기"
+            className="shrink-0 text-2xl leading-none text-gray-400 hover:text-gray-600"
+          >
+            ×
+          </button>
+        </div>
+        {imageSrc && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageSrc} alt="" className="mt-4 w-full rounded-2xl object-contain" />
+        )}
+        {note.content && (
+          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
             {note.content}
           </p>
         )}
@@ -135,6 +197,7 @@ function CommunityPageInner() {
   const [notes, setNotes] = useState<BookNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<BookNote | null>(null);
 
   // 함께 북톡 = 참여 중인 모임 목록
   useEffect(() => {
@@ -249,49 +312,9 @@ function CommunityPageInner() {
       {/* 본문 */}
       <div className="flex flex-1 flex-col">
         {tab === "함께 북톡" ? (
-          loading ? (
-            <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
-          ) : error ? (
-            <p className="py-16 text-center text-sm text-red-600">{error}</p>
-          ) : hasMeetings ? (
-            <div className="mt-5 flex flex-col gap-4">
-              {meetings.map((m) => (
-                <MeetingListCard key={m.id} meeting={m} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-1 items-center justify-center py-10">
-              <EmptyState
-                image="/images/bookmate-together.png"
-                title="아직 함께하는 북톡이 없어요"
-                lines={["같은 책을 읽고 문장을 나눌", "첫 모임을 만들어 보세요"]}
-              />
-            </div>
-          )
-        ) : notesLoading ? (
-          <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
-        ) : notesError ? (
-          <p className="py-16 text-center text-sm text-red-600">{notesError}</p>
-        ) : notes.length > 0 ? (
-          <div className="mt-5 flex flex-col gap-3">
-            {notes.map((n) => (
-              <BookNoteCard key={n.id} note={n} onDelete={handleDeleteNote} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-1 items-center justify-center py-10">
-            <EmptyState
-              image="/images/bookmate-solo.png"
-              title="아직 남긴 기록이 없어요"
-              lines={["읽다가 멈춘 문장, 떠오른 생각을", "가볍게 남겨 보세요"]}
-            />
-          </div>
-        )}
-
-        {/* 하단 액션 버튼 */}
-        <div className="mt-6 flex flex-col gap-3">
-          {tab === "함께 북톡" ? (
-            <>
+          <>
+            {/* 상단 액션: 모임 만들기 / 초대 코드로 참여하기 */}
+            <div className="mt-5 flex flex-col gap-3">
               <Link
                 href="/community/new"
                 className="flex items-center justify-center rounded-full bg-[#F7EF82] py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:brightness-95"
@@ -304,17 +327,64 @@ function CommunityPageInner() {
               >
                 초대 코드로 참여하기
               </button>
-            </>
-          ) : (
+            </div>
+
+            {loading ? (
+              <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
+            ) : error ? (
+              <p className="py-16 text-center text-sm text-red-600">{error}</p>
+            ) : hasMeetings ? (
+              <div className="mt-5 flex flex-col gap-4">
+                {meetings.map((m) => (
+                  <MeetingListCard key={m.id} meeting={m} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-center py-10">
+                <EmptyState
+                  image="/images/bookmate-together.png"
+                  title="아직 함께하는 북톡이 없어요"
+                  lines={["같은 책을 읽고 문장을 나눌", "첫 모임을 만들어 보세요"]}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* 상단 액션: 기록 남기기 */}
             <button
               onClick={() => router.push("/community/record")}
-              className="flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
+              className="mt-5 flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
             >
               {notes.length > 0 ? "기록 남기기" : "첫 기록 남기기"}
             </button>
-          )}
-        </div>
+
+            {notesLoading ? (
+              <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
+            ) : notesError ? (
+              <p className="py-16 text-center text-sm text-red-600">{notesError}</p>
+            ) : notes.length > 0 ? (
+              <div className="mt-5 flex flex-col gap-3">
+                {notes.map((n) => (
+                  <BookNoteCard key={n.id} note={n} onOpen={setSelectedNote} onDelete={handleDeleteNote} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-center py-10">
+                <EmptyState
+                  image="/images/bookmate-solo.png"
+                  title="아직 남긴 기록이 없어요"
+                  lines={["읽다가 멈춘 문장, 떠오른 생각을", "가볍게 남겨 보세요"]}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      {selectedNote && (
+        <BookNoteDetailModal note={selectedNote} onClose={() => setSelectedNote(null)} />
+      )}
 
       <BottomNav />
     </main>
