@@ -51,18 +51,20 @@ function toShelfEntry(record: ReadingRecord): ShelfEntry {
 // ---------- 세워둔 책등 (파스텔 + 세로 제목 + 출판사) ----------
 function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; tilt: boolean }) {
   const color = SPINE_PASTELS[index % SPINE_PASTELS.length];
-  const height = 150 + (hashSeed(book.title) % 4) * 12; // 150~186, 책마다 살짝 다른 키
+  // 제목을 10~15자까지 보여줄 수 있도록 책등을 더 높게. (어린이책 등 긴 제목 대응)
+  const height = 220 + (hashSeed(book.title) % 4) * 16; // 220~268
   const tiltDeg = -7; // 기울임 방향(윗부분이 왼쪽으로)
   // 기운 책의 윗부분이 옆 책을 침범하지 않도록, 기운 쪽(왼쪽)에만 여백을 준다.
   const leanPx = tilt ? Math.ceil(height * Math.abs(Math.sin((tiltDeg * Math.PI) / 180))) : 0;
-  const maxChars = Math.max(2, Math.floor((height - 48) / 15));
+  // 상/하 여백 + 가로 출판사 영역을 제외한 높이로 제목 글자 수 산정. 10~15자 범위로 클램프.
+  const maxChars = Math.min(15, Math.max(10, Math.floor((height - 88) / 12)));
   const shortTitle =
     book.title.length > maxChars ? `${book.title.slice(0, maxChars - 1)}…` : book.title;
 
   return (
     <div
       title={book.title}
-      className="flex w-[38px] shrink-0 origin-bottom flex-col items-center justify-between rounded-md border py-3"
+      className="flex w-[38px] shrink-0 origin-bottom flex-col items-center justify-between overflow-hidden rounded-md border py-3"
       style={{
         height,
         backgroundColor: color,
@@ -72,20 +74,23 @@ function BookSpine({ book, index, tilt }: { book: ShelfEntry; index: number; til
         marginLeft: leanPx || undefined,
       }}
     >
-      <span className="flex flex-col items-center leading-[1.15]">
+      {/* 제목: 세로(글자 쌓기) */}
+      <span className="flex flex-col items-center leading-[1.05]">
         {Array.from(shortTitle).map((char, i) => (
           <span key={i} className="text-[11px] font-bold">
             {char}
           </span>
         ))}
       </span>
+      {/* 출판사: 가로 글자를 책등 길이에 맞춰 90° 회전해 7~8자 보이게 */}
       {book.publisher && (
-        <span className="flex flex-col items-center leading-tight opacity-80">
-          {Array.from(book.publisher.slice(0, 2)).map((char, i) => (
-            <span key={i} className="text-[9px] font-bold">
-              {char}
-            </span>
-          ))}
+        <span className="flex h-[64px] items-center justify-center">
+          <span
+            className="whitespace-nowrap text-[8px] font-bold opacity-80"
+            style={{ transform: "rotate(-90deg)" }}
+          >
+            {book.publisher.slice(0, 8)}
+          </span>
         </span>
       )}
     </div>
@@ -286,13 +291,16 @@ export default function BookBoxPage() {
     };
   }, [ready, router]);
 
-  // 완독일(endDate) 기준으로 기간(연/월)에 해당하는 책만 추린다.
+  // 완독일(endDate) 기준으로 기간(연/월)에 해당하는 책만 추리고, 과거→최근 순으로 정렬한다.
+  // (왼쪽 1번부터 오른쪽으로 과거→최근 순서로 쌓이도록 오름차순)
   const books = useMemo(() => {
-    if (granularity === "연간") {
-      return completed.filter((b) => b.endDate?.slice(0, 4) === String(year));
-    }
-    const prefix = `${year}-${String(month).padStart(2, "0")}`;
-    return completed.filter((b) => b.endDate?.startsWith(prefix));
+    const inPeriod =
+      granularity === "연간"
+        ? completed.filter((b) => b.endDate?.slice(0, 4) === String(year))
+        : completed.filter((b) =>
+            b.endDate?.startsWith(`${year}-${String(month).padStart(2, "0")}`),
+          );
+    return [...inPeriod].sort((a, b) => (a.endDate ?? "").localeCompare(b.endDate ?? ""));
   }, [completed, granularity, year, month]);
 
   if (!ready) return null;
