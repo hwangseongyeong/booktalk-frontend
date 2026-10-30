@@ -181,13 +181,21 @@ export type MeetingChatReactionsResponse = {
 };
 
 /** 모임 채팅 메시지. mine=true면 내가 보낸 메시지. */
+export type MeetingChatAttachmentType = "IMAGE" | "FILE";
+
 export type MeetingChatMessage = {
   id: number;
   senderId: number;
   senderNickname: string;
   senderProfileImageUrl: string | null;
   senderProfileColor: string | null;
-  content: string;
+  /** 첨부만 있는 메시지는 null일 수 있다. */
+  content: string | null;
+  /** 첨부(사진/파일) 접근 URL. 없으면 null. resolveAssetUrl로 절대화해 사용. */
+  attachmentUrl: string | null;
+  attachmentType: MeetingChatAttachmentType | null;
+  attachmentName: string | null;
+  attachmentSize: number | null;
   createdAt: string;
   mine: boolean;
   reactions: MeetingChatReaction[];
@@ -503,6 +511,16 @@ export const apiClient = {
     return request<{ url: string }>("/uploads/images", { method: "POST", body: form });
   },
 
+  /** 일반 파일(문서류) 업로드 → URL·원본명·크기. 채팅 첨부로 사용. */
+  uploadFile: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ url: string; name: string; size: number; contentType: string | null }>(
+      "/uploads/files",
+      { method: "POST", body: form }
+    );
+  },
+
   // ---------- 책 ----------
   searchBooks: (query?: string) =>
     request<BookSearchResult[]>(`/books${query ? `?query=${encodeURIComponent(query)}` : ""}`),
@@ -639,11 +657,20 @@ export const apiClient = {
       `/meetings/${id}/messages${afterId != null ? `?afterId=${afterId}` : ""}`
     ),
 
-  /** 메시지 전송 */
-  sendMeetingMessage: (id: number, content: string) =>
+  /** 메시지 전송. 본문(content) 또는 첨부(attachmentUrl) 중 하나는 있어야 한다. */
+  sendMeetingMessage: (
+    id: number,
+    payload: {
+      content?: string;
+      attachmentUrl?: string;
+      attachmentType?: MeetingChatAttachmentType;
+      attachmentName?: string;
+      attachmentSize?: number;
+    }
+  ) =>
     request<MeetingChatMessage>(`/meetings/${id}/messages`, {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(payload),
     }),
 
   /** 최근 메시지 윈도우의 리액션 집계(폴링용). fromMessageId 이상 메시지에만 적용 */

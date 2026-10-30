@@ -7,6 +7,7 @@ import {
   apiClient,
   authStorage,
   meetingChatSocketUrl,
+  resolveAssetUrl,
   type MeetingChatMessage,
   type MeetingChatReaction,
   type MeetingMember,
@@ -91,6 +92,86 @@ function dateLabel(iso: string) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+/** 파일 선택 input의 accept(문서류). 백엔드 허용 확장자와 맞춘다. */
+const FILE_ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.hwp,.hwpx";
+
+/** bytes → 사람이 읽기 쉬운 크기 */
+function formatFileSize(bytes: number | null): string {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function PhotoIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
+    </svg>
+  );
+}
+
+function PaperclipIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
+function FileIcon({ size = 26, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  );
+}
+
+/** 메시지 첨부(사진 썸네일 / 파일 다운로드 카드). 없으면 null. */
+function AttachmentBlock({ m, mine }: { m: MeetingChatMessage; mine: boolean }) {
+  if (!m.attachmentUrl) return null;
+  const url = resolveAssetUrl(m.attachmentUrl);
+  if (!url) return null;
+
+  if (m.attachmentType === "IMAGE") {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className="block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={m.attachmentName ?? "이미지"}
+          className="max-h-64 max-w-full rounded-2xl object-cover"
+        />
+      </a>
+    );
+  }
+
+  // FILE — 다운로드 카드. name 쿼리로 원본 파일명을 넘겨 서버가 Content-Disposition에 지정.
+  const name = m.attachmentName ?? "파일";
+  const downloadUrl = `${url}${url.includes("?") ? "&" : "?"}name=${encodeURIComponent(name)}`;
+  const meta = [formatFileSize(m.attachmentSize), "다운로드"].filter(Boolean).join(" · ");
+  return (
+    <a
+      href={downloadUrl}
+      download={name}
+      className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3 shadow-sm transition-colors ${
+        mine
+          ? "border-gray-700 bg-gray-800 text-white hover:bg-gray-700"
+          : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+      }`}
+    >
+      <FileIcon size={26} className={mine ? "text-white/80" : "text-gray-400"} />
+      <span className="min-w-0">
+        <span className="block max-w-[180px] truncate text-sm font-medium">{name}</span>
+        <span className={`text-xs ${mine ? "text-white/60" : "text-gray-400"}`}>{meta}</span>
+      </span>
+    </a>
+  );
+}
+
 export default function MeetingChatPage() {
   const ready = useRequireAuth();
   const router = useRouter();
@@ -117,6 +198,9 @@ export default function MeetingChatPage() {
   const lastIdRef = useRef<number>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   // 커서 위치에 이모지를 삽입한다.
   function insertEmoji(emoji: string) {
@@ -308,7 +392,7 @@ export default function MeetingChatPage() {
     if (!content || sending) return;
     setSending(true);
     try {
-      const saved = await apiClient.sendMeetingMessage(meetingId, content);
+      const saved = await apiClient.sendMeetingMessage(meetingId, { content });
       appendMessages([saved]);
       setInput("");
       setShowEmoji(false);
@@ -316,6 +400,49 @@ export default function MeetingChatPage() {
       setError(err instanceof Error ? err.message : "메시지 전송에 실패했어요.");
     } finally {
       setSending(false);
+    }
+  }
+
+  // 사진/파일 업로드 후 첨부 메시지를 전송한다. 업로드 실패는 대화를 막지 않도록 alert로만 알린다.
+  async function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 같은 파일 재선택 허용
+    if (!file || uploading) return;
+    setUploading(true);
+    try {
+      const { url } = await apiClient.uploadImage(file);
+      const saved = await apiClient.sendMeetingMessage(meetingId, {
+        attachmentUrl: url,
+        attachmentType: "IMAGE",
+        attachmentName: file.name,
+        attachmentSize: file.size,
+      });
+      appendMessages([saved]);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "사진 전송에 실패했어요.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || uploading) return;
+    setUploading(true);
+    try {
+      const res = await apiClient.uploadFile(file);
+      const saved = await apiClient.sendMeetingMessage(meetingId, {
+        attachmentUrl: res.url,
+        attachmentType: "FILE",
+        attachmentName: res.name ?? file.name,
+        attachmentSize: res.size ?? file.size,
+      });
+      appendMessages([saved]);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "파일 전송에 실패했어요.");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -436,13 +563,18 @@ export default function MeetingChatPage() {
                       {endOfGroup && (
                         <span className="mb-0.5 shrink-0 text-[10px] text-gray-400">{formatTime(m.createdAt)}</span>
                       )}
-                      <p
-                        className={`max-w-[74%] whitespace-pre-wrap break-words bg-gray-900 px-3.5 py-2 text-sm leading-relaxed text-white ${
-                          startOfGroup ? "rounded-2xl rounded-tr-md" : "rounded-2xl"
-                        }`}
-                      >
-                        {m.content}
-                      </p>
+                      <div className="flex max-w-[74%] flex-col items-end gap-1">
+                        <AttachmentBlock m={m} mine />
+                        {m.content && (
+                          <p
+                            className={`w-fit max-w-full whitespace-pre-wrap break-words bg-gray-900 px-3.5 py-2 text-sm leading-relaxed text-white ${
+                              startOfGroup ? "rounded-2xl rounded-tr-md" : "rounded-2xl"
+                            }`}
+                          >
+                            {m.content}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     {chips}
                   </div>
@@ -463,13 +595,18 @@ export default function MeetingChatPage() {
                         <p className="mb-1 ml-1 text-xs font-medium text-gray-500">{m.senderNickname}</p>
                       )}
                       <div className="relative flex items-end gap-1.5">
-                        <p
-                          className={`max-w-[74%] whitespace-pre-wrap break-words bg-white px-3.5 py-2 text-sm leading-relaxed text-gray-900 shadow-sm ${
-                            startOfGroup ? "rounded-2xl rounded-tl-md" : "rounded-2xl"
-                          }`}
-                        >
-                          {m.content}
-                        </p>
+                        <div className="flex max-w-[74%] flex-col gap-1">
+                          <AttachmentBlock m={m} mine={false} />
+                          {m.content && (
+                            <p
+                              className={`w-fit max-w-full whitespace-pre-wrap break-words bg-white px-3.5 py-2 text-sm leading-relaxed text-gray-900 shadow-sm ${
+                                startOfGroup ? "rounded-2xl rounded-tl-md" : "rounded-2xl"
+                              }`}
+                            >
+                              {m.content}
+                            </p>
+                          )}
+                        </div>
                         {/* 리액션 추가 버튼 */}
                         <button
                           type="button"
@@ -542,7 +679,48 @@ export default function MeetingChatPage() {
             </div>
           )}
 
-          <form onSubmit={handleSend} className="flex items-center gap-2 px-3 py-3">
+          {/* 업로드 진행 표시 */}
+          {uploading && (
+            <div className="border-b border-gray-100 px-4 py-1.5 text-center text-xs text-gray-400">
+              첨부 파일 전송 중...
+            </div>
+          )}
+
+          {/* 숨겨진 파일 선택 input (사진 / 문서) */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePickImage}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={FILE_ACCEPT}
+            className="hidden"
+            onChange={handlePickFile}
+          />
+
+          <form onSubmit={handleSend} className="flex items-center gap-1.5 px-3 py-3">
+            <button
+              type="button"
+              aria-label="사진 첨부"
+              disabled={uploading}
+              onClick={() => imageInputRef.current?.click()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40"
+            >
+              <PhotoIcon size={21} />
+            </button>
+            <button
+              type="button"
+              aria-label="파일 첨부"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-40"
+            >
+              <PaperclipIcon size={21} />
+            </button>
             <button
               type="button"
               aria-label="이모지"
