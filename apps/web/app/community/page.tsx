@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   apiClient,
@@ -175,6 +175,41 @@ function EmptyState({
   );
 }
 
+/** 상단 원형 액션 버튼 (올리기 옆에 나란히). 아이콘은 추후 추가 — 지금은 빈 동그라미. */
+function CircleAction({
+  label,
+  onClick,
+  href,
+  children,
+}: {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  children?: ReactNode;
+}) {
+  const circle = (
+    <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-gray-300 text-gray-400">
+      {children}
+    </span>
+  );
+  const labelEl = <span className="text-xs font-bold text-gray-700">{label}</span>;
+  const cls = "flex flex-col items-center gap-1.5";
+  if (href) {
+    return (
+      <Link href={href} className={cls} aria-label={label}>
+        {circle}
+        {labelEl}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls} aria-label={label}>
+      {circle}
+      {labelEl}
+    </button>
+  );
+}
+
 export default function CommunityPage() {
   return (
     <Suspense fallback={<main className="min-h-screen bg-white" />}>
@@ -273,19 +308,19 @@ function CommunityPageInner() {
         책으로 연결되고, 이야기로 가까워지는 우리
       </p>
 
-      {/* 올리기(스토리) */}
-      <div className="mt-5">
-        <button
-          type="button"
-          onClick={() => window.alert("준비 중이에요.")}
-          className="flex flex-col items-center gap-1.5"
-          aria-label="올리기"
-        >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-gray-300 text-gray-400">
-            <PlusIcon size={20} />
-          </span>
-          <span className="text-xs font-bold text-gray-700">올리기</span>
-        </button>
+      {/* 상단 원형 액션: 올리기 + 탭별 액션 (아이콘은 추후, 지금은 빈 동그라미) */}
+      <div className="mt-5 flex gap-4">
+        <CircleAction label="올리기" onClick={() => window.alert("준비 중이에요.")}>
+          <PlusIcon size={20} />
+        </CircleAction>
+        {tab === "함께 북톡" ? (
+          <>
+            <CircleAction label="모임 만들기" href="/community/new" />
+            <CircleAction label="초대하기" onClick={handleJoinByCode} />
+          </>
+        ) : (
+          <CircleAction label="기록 남기기" onClick={() => router.push("/community/record")} />
+        )}
       </div>
 
       {/* 탭 */}
@@ -313,22 +348,6 @@ function CommunityPageInner() {
       <div className="flex flex-1 flex-col">
         {tab === "함께 북톡" ? (
           <>
-            {/* 상단 액션: 모임 만들기 / 초대 코드로 참여하기 */}
-            <div className="mt-5 flex flex-col gap-3">
-              <Link
-                href="/community/new"
-                className="flex items-center justify-center rounded-full bg-[#F7EF82] py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:brightness-95"
-              >
-                + 모임 만들기
-              </Link>
-              <button
-                onClick={handleJoinByCode}
-                className="flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
-              >
-                초대 코드로 참여하기
-              </button>
-            </div>
-
             {loading ? (
               <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
             ) : error ? (
@@ -351,14 +370,6 @@ function CommunityPageInner() {
           </>
         ) : (
           <>
-            {/* 상단 액션: 기록 남기기 */}
-            <button
-              onClick={() => router.push("/community/record")}
-              className="mt-5 flex items-center justify-center rounded-full border border-gray-900 py-3.5 text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50"
-            >
-              {notes.length > 0 ? "기록 남기기" : "첫 기록 남기기"}
-            </button>
-
             {notesLoading ? (
               <p className="py-16 text-center text-sm text-gray-400">불러오는 중...</p>
             ) : notesError ? (
