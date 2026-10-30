@@ -584,6 +584,9 @@ export const apiClient = {
   /** 내 혼자 기록 목록(최신순) */
   getMyBookNotes: () => request<BookNote[]>("/book-notes"),
 
+  /** 혼자 북톡 단건 조회(본인 것만) */
+  getBookNote: (id: number) => request<BookNote>(`/book-notes/${id}`),
+
   /** 혼자 기록 작성. 사진(imageUrl)·글(content) 중 하나 이상 필요, bookId는 선택. */
   createBookNote: (payload: { bookId?: number; imageUrl?: string; content?: string }) =>
     request<BookNote>("/book-notes", {

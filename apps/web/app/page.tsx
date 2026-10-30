@@ -75,7 +75,13 @@ export default function HomePage() {
       .then(([readingRecords, completedRecords]) => {
         if (cancelled) return;
         setReading(readingRecords);
-        setCompleted(completedRecords);
+        // 나의 리뷰: 최종완독일(endDate) 최신순. 완독일이 같으면 최근 기록(id) 우선.
+        setCompleted(
+          [...completedRecords].sort((a, b) => {
+            const byDate = (b.endDate ?? "").localeCompare(a.endDate ?? "");
+            return byDate !== 0 ? byDate : b.id - a.id;
+          })
+        );
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : "홈을 불러오지 못했습니다.");

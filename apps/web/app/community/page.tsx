@@ -5,7 +5,6 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   apiClient,
-  resolveAssetUrl,
   type BookNote,
   type Meeting,
 } from "@booktalk/api-client";
@@ -73,47 +72,6 @@ function BookNoteCard({
         )}
         {note.content && (
           <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-gray-400">{note.content}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** 혼자 북톡 상세 모달 — 업로드한 이미지와 전체 글을 보여준다 */
-function BookNoteDetailModal({ note, onClose }: { note: BookNote; onClose: () => void }) {
-  const imageSrc = resolveAssetUrl(note.imageUrl);
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 sm:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            {note.book && (
-              <p className="truncate text-base font-bold text-gray-900">{note.book.title}</p>
-            )}
-            <p className="mt-0.5 text-xs text-gray-400">{formatNoteDate(note.createdAt)}</p>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            className="shrink-0 text-2xl leading-none text-gray-400 hover:text-gray-600"
-          >
-            ×
-          </button>
-        </div>
-        {imageSrc && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageSrc} alt="" className="mt-4 w-full rounded-2xl object-contain" />
-        )}
-        {note.content && (
-          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
-            {note.content}
-          </p>
         )}
       </div>
     </div>
@@ -232,7 +190,6 @@ function CommunityPageInner() {
   const [notes, setNotes] = useState<BookNote[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [selectedNote, setSelectedNote] = useState<BookNote | null>(null);
 
   // 함께 북톡 = 참여 중인 모임 목록
   useEffect(() => {
@@ -377,7 +334,12 @@ function CommunityPageInner() {
             ) : notes.length > 0 ? (
               <div className="mt-5 flex flex-col gap-3">
                 {notes.map((n) => (
-                  <BookNoteCard key={n.id} note={n} onOpen={setSelectedNote} onDelete={handleDeleteNote} />
+                  <BookNoteCard
+                    key={n.id}
+                    note={n}
+                    onOpen={(note) => router.push(`/community/notes/${note.id}`)}
+                    onDelete={handleDeleteNote}
+                  />
                 ))}
               </div>
             ) : (
@@ -392,10 +354,6 @@ function CommunityPageInner() {
           </>
         )}
       </div>
-
-      {selectedNote && (
-        <BookNoteDetailModal note={selectedNote} onClose={() => setSelectedNote(null)} />
-      )}
 
       <BottomNav />
     </main>
