@@ -300,7 +300,7 @@ export default function HomePage() {
                       {record.myWords.map((word) => (
                         <span
                           key={word}
-                          className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft"
+                          className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
                         >
                           {word}
                         </span>

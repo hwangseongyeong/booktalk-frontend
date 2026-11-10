@@ -141,7 +141,7 @@ function ReviewList({ books }: { books: ShelfEntry[] }) {
             {book.myWords.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {book.myWords.map((word) => (
-                  <span key={word} className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft">
+                  <span key={word} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                     {word}
                   </span>
                 ))}
