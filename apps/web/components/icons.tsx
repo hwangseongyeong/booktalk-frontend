@@ -54,6 +54,62 @@ export function BookTalkLogo({ size = 110, ...props }: IconProps) {
   );
 }
 
+/**
+ * 책 읽는 사람 — 로그인/시작 화면 일러스트.
+ * 선은 `currentColor`(부모 text-ink), 책·손 내부는 배경 미색으로 채워 겹친 선을 가린다.
+ * 책갈피만 노란 포인트 컬러로 고정.
+ */
+export function ReaderIllustration({ size = 184, ...props }: IconProps) {
+  const paper = "var(--illust-paper, #FAF9F5)";
+  const h = Math.round((size * 210) / 220);
+  return (
+    <svg width={size} height={h} viewBox="0 0 220 210" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round">
+        {/* 얼굴 */}
+        <ellipse cx="110" cy="70" rx="46" ry="52" fill={paper} />
+        {/* 앞머리(물결 스트랜드) */}
+        <g strokeWidth={2.3} fill="none">
+          <path d="M78 64 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M88 65 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M98 66 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M110 66 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M122 66 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M132 65 q3 -4 0 -8 q-3 -4 0 -8" />
+          <path d="M142 64 q3 -4 0 -8 q-3 -4 0 -8" />
+        </g>
+        {/* 눈 */}
+        <circle cx="94" cy="80" r="3.4" fill="currentColor" stroke="none" />
+        <circle cx="122" cy="80" r="3.4" fill="currentColor" stroke="none" />
+        {/* 코·입 */}
+        <path d="M108 87 q4 6 -2 8" strokeWidth={2.3} />
+        {/* 펼친 책(두 페이지) */}
+        <path d="M110 118 L50 126 L60 168 L110 160 Z" fill={paper} />
+        <path d="M110 118 L170 126 L160 168 L110 160 Z" fill={paper} />
+        {/* 오른쪽 페이지 라벨 */}
+        <rect x="126" y="134" width="27" height="15" rx="2" strokeWidth={2.3} />
+        <line x1="131" y1="139.5" x2="148" y2="139.5" strokeWidth={1.7} />
+        <line x1="131" y1="144" x2="148" y2="144" strokeWidth={1.7} />
+        {/* 왼손(책을 쥔 손가락) */}
+        <g strokeWidth={3} fill={paper}>
+          <path d="M58 128 q-16 -1 -18 6 q2 5 10 5" />
+          <path d="M40 134 q-9 1 -8 7 q1 4 9 3" />
+          <path d="M41 144 q-8 1 -7 6 q1 4 8 3" />
+          <path d="M44 153 q-7 1 -6 5" />
+        </g>
+        {/* 오른손 */}
+        <g strokeWidth={3} fill={paper}>
+          <path d="M162 128 q16 -1 18 6 q-2 5 -10 5" />
+          <path d="M180 134 q9 1 8 7 q-1 4 -9 3" />
+          <path d="M179 144 q8 1 7 6 q-1 4 -8 3" />
+          <path d="M176 153 q7 1 6 5" />
+        </g>
+        {/* 책갈피(노란 포인트) */}
+        <path d="M102 160 L118 160 L118 186 L110 178 L102 186 Z" fill="#FFCF33" />
+      </g>
+    </svg>
+  );
+}
+
 /** 연필 — "기록" */
 export function PencilIcon({ size = 52, ...props }: IconProps) {
   return (

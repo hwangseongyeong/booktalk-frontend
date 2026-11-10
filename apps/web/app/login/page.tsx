@@ -6,6 +6,7 @@ import {
   BubbleIcon,
   PaperPlaneIcon,
   PencilIcon,
+  ReaderIllustration,
 } from "../../components/icons";
 import { PillButton, ScreenShell } from "../../components/ui";
 
@@ -84,7 +85,7 @@ function LoginScreen() {
         </>
       }
     >
-      <Wordmark width={208} />
+      <ReaderIllustration size={192} className="text-ink" />
       <p className="text-sm font-medium leading-relaxed text-muted">
         소셜 계정으로 로그인하고
         <br />내 서재를 만들어보세요
