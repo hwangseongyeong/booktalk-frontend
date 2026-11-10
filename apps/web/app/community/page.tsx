@@ -10,6 +10,7 @@ import {
 } from "@booktalk/api-client";
 import { useRequireAuth } from "../../lib/useRequireAuth";
 import { formatDday } from "../../lib/meetings";
+import { shareMeetingToKakao } from "../../lib/kakao";
 import { BottomNav } from "../../components/bottom-nav";
 import { BellIcon, PlusIcon } from "../../components/icons";
 import { ReadingModeBadge, MeetingCover } from "../../components/community";
@@ -191,6 +192,10 @@ function CommunityPageInner() {
   const [notesLoading, setNotesLoading] = useState(true);
   const [notesError, setNotesError] = useState<string | null>(null);
 
+  // 카카오톡 친구초대: 모임이 여러 개일 때 고르는 시트 + 공유 진행 상태
+  const [invitePickerOpen, setInvitePickerOpen] = useState(false);
+  const [inviting, setInviting] = useState(false);
+
   // 함께 북톡 = 참여 중인 모임 목록
   useEffect(() => {
     if (!ready) return;
@@ -240,10 +245,44 @@ function CommunityPageInner() {
     }
   }
 
-  // 초대 코드로 참여하기 — 코드 입력 후 초대 화면으로 이동
-  function handleJoinByCode() {
-    const code = window.prompt("초대 코드를 입력해주세요.")?.trim();
-    if (code) router.push(`/community/invite/${encodeURIComponent(code)}`);
+  // 카카오톡 친구초대 — 내 모임의 비공개 초대 링크를 카카오톡으로 공유한다.
+  // 모임이 없으면 만들기로 유도하고, 여러 개면 어떤 모임으로 초대할지 고른다.
+  function handleInviteToKakao() {
+    if (meetings.length === 0) {
+      if (window.confirm("초대할 모임이 없어요. 모임을 먼저 만들까요?")) {
+        router.push("/community/new");
+      }
+      return;
+    }
+    if (meetings.length === 1) {
+      inviteToMeeting(meetings[0]);
+      return;
+    }
+    setInvitePickerOpen(true);
+  }
+
+  // 선택한 모임의 초대 토큰을 조회해 카카오톡으로 공유한다. (토큰은 상세에만 내려온다)
+  async function inviteToMeeting(meeting: Meeting) {
+    if (inviting) return;
+    setInviting(true);
+    try {
+      const detail = await apiClient.getMeeting(meeting.id);
+      if (!detail.inviteToken) {
+        window.alert("초대 링크를 불러오지 못했어요.");
+        return;
+      }
+      await shareMeetingToKakao({
+        url: `${window.location.origin}/community/invite/${detail.inviteToken}`,
+        meetingName: detail.name,
+        bookTitle: detail.book.title,
+        coverImageUrl: detail.book.coverImageUrl,
+      });
+      setInvitePickerOpen(false);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "초대 공유에 실패했어요.");
+    } finally {
+      setInviting(false);
+    }
   }
 
   if (!ready) return null;
@@ -273,7 +312,7 @@ function CommunityPageInner() {
         {tab === "함께 북톡" ? (
           <>
             <CircleAction label="모임 만들기" href="/community/new" />
-            <CircleAction label="초대하기" onClick={handleJoinByCode} />
+            <CircleAction label="초대하기" onClick={handleInviteToKakao} />
           </>
         ) : (
           <CircleAction label="기록 남기기" onClick={() => router.push("/community/record")} />
@@ -354,6 +393,50 @@ function CommunityPageInner() {
           </>
         )}
       </div>
+
+      {/* 카카오톡 친구초대 — 모임이 여러 개일 때 선택 시트 */}
+      {invitePickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => !inviting && setInvitePickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl bg-white p-5 pb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-base font-bold text-gray-900">어떤 모임으로 초대할까요?</p>
+            <p className="mt-1 text-sm text-gray-400">카카오톡으로 초대 링크를 보내요.</p>
+            <div className="mt-4 flex flex-col gap-2">
+              {meetings.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => inviteToMeeting(m)}
+                  disabled={inviting}
+                  className="flex items-center gap-3 rounded-2xl border border-gray-200 p-3 text-left transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <MeetingCover
+                    title={m.book.title}
+                    coverImageUrl={m.book.coverImageUrl ?? m.book.spineImageUrl}
+                    primaryColor={m.book.primaryColor}
+                    className="h-16 w-11 shrink-0"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-gray-900">{m.name}</span>
+                    <span className="block truncate text-xs text-gray-400">{m.book.title}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setInvitePickerOpen(false)}
+              disabled={inviting}
+              className="mt-4 w-full rounded-full border border-gray-300 py-3 text-sm font-bold text-gray-600 disabled:opacity-50"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </main>
