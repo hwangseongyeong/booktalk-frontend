@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * 로그인 후 온보딩 3단계(닉네임 → 프로필 → 친구 초대) 공용 레이아웃.
+ * 로그인 후 온보딩(닉네임) 공용 레이아웃.
  * 상단에 진행 표시, 큰 볼드 제목, 본문, 하단 고정 액션.
  */
 import type { ReactNode } from "react";
 import { PillButton, ProgressDots, ScreenShell } from "./ui";
 
-export const ONBOARDING_STEPS = 3;
+export const ONBOARDING_STEPS = 1;
 
 type Action =
   | { label: string; onClick: () => void; href?: never; disabled?: boolean }

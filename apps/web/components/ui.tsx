@@ -161,6 +161,8 @@ export function TextField({
 /*  ProgressDots — 온보딩 단계 표시                                     */
 /* ------------------------------------------------------------------ */
 export function ProgressDots({ count, active }: { count: number; active: number }) {
+  // 단계가 하나뿐이면 진행 표시는 의미가 없어 숨긴다.
+  if (count <= 1) return null;
   return (
     <div className="flex items-center gap-2" aria-label={`${count}단계 중 ${active + 1}단계`}>
       {Array.from({ length: count }).map((_, i) => (
