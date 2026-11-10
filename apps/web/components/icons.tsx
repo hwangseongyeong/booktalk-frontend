@@ -175,6 +175,60 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
+/* ---------- 오른쪽 꺾쇠 (배너/리스트 이동 표시) ---------- */
+export function ChevronRightIcon({ size = 24, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
+      <path d="M9 5 L16 12 L9 19" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ---------- 둘러보기 타일 아이콘 (얇은 라인) ---------- */
+/** 주변 도서관 — 기둥이 있는 건물 */
+export function LibraryIcon({ size = 26, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13 3 L22 8 L4 8 Z" />
+        <line x1="6.5" y1="11" x2="6.5" y2="18" />
+        <line x1="11" y1="11" x2="11" y2="18" />
+        <line x1="15" y1="11" x2="15" y2="18" />
+        <line x1="19.5" y1="11" x2="19.5" y2="18" />
+        <line x1="3.5" y1="21" x2="22.5" y2="21" />
+      </g>
+    </svg>
+  );
+}
+
+/** 읽을거리 — 글이 적힌 문서 */
+export function ArticleIcon({ size = 26, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="5" y="3.5" width="16" height="19" rx="2.5" />
+        <line x1="9" y1="9" x2="17" y2="9" />
+        <line x1="9" y1="13" x2="17" y2="13" />
+        <line x1="9" y1="17" x2="14" y2="17" />
+      </g>
+    </svg>
+  );
+}
+
+/** 공지사항 — 확성기 */
+export function MegaphoneIcon({ size = 26, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 26 26" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 11 L5 15 L8 15 L18 20 L18 6 L8 11 Z" />
+        <path d="M8 15 L8 11" />
+        <path d="M9 19 L9 21 L11.5 21 L11 17" />
+        <path d="M21 11 L23 11 M20.5 8 L22.5 7 M20.5 18 L22.5 19" />
+      </g>
+    </svg>
+  );
+}
+
 /* ---------- 공유 (헤더 우상단, iOS 스타일 박스+위 화살표) ---------- */
 export function ShareIcon({ size = 26, ...props }: IconProps) {
   return (

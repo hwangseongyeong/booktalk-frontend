@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { apiClient, resolveAssetUrl, type ReadingRecord } from "@booktalk/api-client";
 import { useRequireAuth } from "../lib/useRequireAuth";
 import { BottomNav } from "../components/bottom-nav";
-import { RegisterBookButton } from "../components/register-book-button";
+import {
+  ArticleIcon,
+  BellIcon,
+  ChevronRightIcon,
+  LibraryIcon,
+  MegaphoneIcon,
+  PencilIcon,
+  ReaderIllustration,
+} from "../components/icons";
 
 // 완독 기록의 한줄평에는 완독 처리 시 선택한 키워드가 #태그 줄로 함께 저장된다.
 // '나의 리뷰' 섹션에서는 태그 줄을 걸러 실제 한줄평만 보여준다.
@@ -24,7 +32,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <span className="ml-2">
       {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={n <= filled ? "text-yellow-400" : "text-gray-300"}>
+        <span key={n} className={n <= filled ? "text-yellow-400" : "text-fill-strong"}>
           ★
         </span>
       ))}
@@ -51,6 +59,63 @@ function BookCover({ book }: { book: ReadingRecord["book"] }) {
       style={{ backgroundColor: book.primaryColor ?? "#8B5E3C" }}
     >
       <span className="line-clamp-4 text-[11px] font-bold leading-tight text-white">{book.title}</span>
+    </div>
+  );
+}
+
+/** 헤더 우상단 아이콘 버튼 (아이콘 + 작은 라벨). href 없으면 준비 중 처리. */
+function HeaderAction({
+  label,
+  href,
+  children,
+}: {
+  label: string;
+  href?: string;
+  children: ReactNode;
+}) {
+  const inner = (
+    <>
+      {children}
+      <span className="text-[10px] font-bold leading-none">{label}</span>
+    </>
+  );
+  const cls = "flex flex-col items-center gap-1 text-ink";
+  return href ? (
+    <Link href={href} aria-label={label} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <button type="button" aria-label={label} className={`${cls} opacity-40`} disabled>
+      {inner}
+    </button>
+  );
+}
+
+/** 둘러보기 타일. href 없으면 준비 중(흐리게, 비활성). */
+function ExploreTile({
+  label,
+  icon,
+  href,
+}: {
+  label: string;
+  icon: ReactNode;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <span className="text-ink">{icon}</span>
+      <span className="whitespace-pre-line text-sm font-bold leading-tight text-ink">{label}</span>
+    </>
+  );
+  const cls =
+    "flex h-24 flex-col justify-between rounded-card bg-fill p-4 text-left transition-colors";
+  return href ? (
+    <Link href={href} className={`${cls} hover:bg-fill-strong`}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={`${cls} opacity-60`} aria-disabled title="준비 중">
+      {inner}
     </div>
   );
 }
@@ -96,49 +161,72 @@ export default function HomePage() {
   if (!ready) return null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-md bg-[#f6f8fb] px-6 pb-24 pt-8">
-      {/* 상단: 좌측 로고 + 우측 책 등록 버튼 */}
-      <div className="flex items-center justify-between">
+    <main className="app-shell px-6 pb-28 pt-8">
+      {/* 헤더: 좌측 로고 + 우측 알림·책등록 */}
+      <header className="flex items-start justify-between">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="text42" width={140} style={{ width: 140 }} className="h-auto" />
-        <RegisterBookButton />
-      </div>
+        <img src="/logo.png" alt="text42" width={132} style={{ width: 132 }} className="mt-1 h-auto" />
+        <div className="flex items-center gap-5">
+          {/* 알림 화면은 준비 중 — 디자인상 자리만 둔다 */}
+          <HeaderAction label="알림">
+            <BellIcon size={24} />
+          </HeaderAction>
+          <HeaderAction label="책등록" href="/books">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/book-add.png" alt="" className="h-6 w-auto" />
+          </HeaderAction>
+        </div>
+      </header>
 
-      <h1 className="mt-5 text-3xl font-bold leading-snug text-gray-900">
+      {/* 히어로 타이틀 */}
+      <h1 className="mt-6 text-[26px] font-bold leading-snug text-ink">
         지금은 어떤 책과
         <br />
-        놀고 있나요?
+        놀고 있나요?!
       </h1>
-      <p className="mt-2 text-sm text-gray-500">책과 나를 이어주는 텍스트사이</p>
+      <p className="mt-2 text-sm font-medium text-muted">책과 나를 이어주는 텍스트사이</p>
 
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-6 text-sm font-medium text-red-600">{error}</p>}
 
       {/* 지금 읽고 있어요 */}
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-gray-900">지금 읽고 있어요</h2>
+        <h2 className="text-lg font-bold text-ink">지금 읽고 있어요</h2>
 
         {loading ? (
-          <p className="mt-4 text-sm text-gray-400">불러오는 중...</p>
+          <p className="mt-4 text-sm text-muted">불러오는 중...</p>
         ) : reading.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-white py-10 text-center shadow-sm">
-            <p className="text-sm text-gray-400">지금 읽고 있는 책이 없어요.</p>
+          <div className="mt-4 flex items-center justify-between gap-2 overflow-hidden rounded-card bg-fill p-5">
+            <div>
+              <p className="text-sm font-bold leading-relaxed text-ink">
+                지금 읽고 있는 책이 없어요
+                <br />
+                첫 책을 등록하고 기록을 시작해요
+              </p>
+              <Link
+                href="/books"
+                className="mt-4 inline-block rounded-full border-bold border-line bg-paper px-5 py-2.5 text-sm font-bold text-ink"
+              >
+                + 책 등록하기
+              </Link>
+            </div>
+            <ReaderIllustration size={104} className="shrink-0 text-ink [--illust-paper:#F1F0EB]" />
           </div>
         ) : (
           <div className="mt-4 flex flex-col gap-4">
             {reading.map((record) => (
               <div
                 key={record.id}
-                className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                className="flex items-center gap-4 rounded-card bg-fill p-5"
               >
                 <BookCover book={record.book} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xl font-bold text-gray-900">{record.book.title}</p>
+                  <p className="truncate text-xl font-bold text-ink">{record.book.title}</p>
                   {record.book.author && (
-                    <p className="mt-0.5 truncate text-sm text-gray-400">{record.book.author}</p>
+                    <p className="mt-0.5 truncate text-sm text-muted">{record.book.author}</p>
                   )}
                   <Link
                     href={`/records/${record.id}/complete`}
-                    className="mt-3 inline-block rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white"
+                    className="mt-3 inline-block rounded-full bg-ink px-5 py-2 text-sm font-bold text-paper-pure"
                   >
                     완독하기
                   </Link>
@@ -149,33 +237,68 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* 혼자 북톡 유도 배너 (추후 광고 영역) */}
+      <Link
+        href="/community/record"
+        className="mt-6 flex items-center gap-4 rounded-card bg-[#FCEF9C] p-5"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-bold border-line bg-paper text-ink">
+          <PencilIcon size={24} />
+        </span>
+        <p className="flex-1 text-sm font-bold leading-snug text-ink">
+          감동받은 문장, 혼자 북톡에
+          <br />
+          필사해보는 건 어때요?!
+        </p>
+        <ChevronRightIcon size={22} className="shrink-0 text-ink" />
+      </Link>
+
+      {/* 둘러보기 */}
+      <section className="mt-10">
+        <h2 className="text-lg font-bold text-ink">둘러보기</h2>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <ExploreTile label="주변 도서관" icon={<LibraryIcon size={26} />} />
+          <ExploreTile label={"?????\n?????"} icon={<span className="block h-[26px]" />} />
+          <ExploreTile label="읽을거리" icon={<ArticleIcon size={26} />} />
+          <ExploreTile label="공지사항" icon={<MegaphoneIcon size={26} />} />
+        </div>
+      </section>
+
       {/* 나의 리뷰 */}
       <section className="mt-10">
-        <h2 className="text-lg font-bold text-gray-900">나의 리뷰</h2>
+        <h2 className="text-lg font-bold text-ink">나의 리뷰</h2>
 
-        {!loading && completed.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-400">아직 완독한 책이 없어요.</p>
+        {loading ? (
+          <p className="mt-4 text-sm text-muted">불러오는 중...</p>
+        ) : completed.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center gap-2 rounded-card border-bold border-dashed border-muted-light bg-paper px-6 py-10 text-center">
+            <p className="text-base font-bold text-ink">아직 남긴 리뷰가 없어요</p>
+            <p className="text-sm font-medium text-muted">완독한 책의 짧은 한 줄 리뷰를 남겨보세요</p>
+            <Link
+              href="/shelf"
+              className="mt-4 inline-block rounded-full border-bold border-line bg-paper px-5 py-2.5 text-sm font-bold text-ink"
+            >
+              리뷰 쓰기
+            </Link>
+          </div>
         ) : (
           <div className="mt-4 flex flex-col gap-4">
             {completed.map((record) => {
               const review = reviewText(record.oneLineNote);
               return (
-                <div
-                  key={record.id}
-                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
-                >
-                  <p className="text-base font-bold text-gray-900">{record.book.title}</p>
-                  <p className="mt-1 text-sm text-gray-400">
+                <div key={record.id} className="rounded-card bg-fill p-5">
+                  <p className="text-base font-bold text-ink">{record.book.title}</p>
+                  <p className="mt-1 text-sm text-muted">
                     완독일 {record.endDate}
                     {record.rating != null && <Stars rating={record.rating} />}
                   </p>
-                  {review && <p className="mt-3 text-sm text-gray-700">&quot;{review}&quot;</p>}
+                  {review && <p className="mt-3 text-sm text-ink-soft">&quot;{review}&quot;</p>}
                   {record.myWords.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {record.myWords.map((word) => (
                         <span
                           key={word}
-                          className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+                          className="rounded-full bg-paper px-3 py-1 text-xs font-medium text-ink-soft"
                         >
                           {word}
                         </span>
