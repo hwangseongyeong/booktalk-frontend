@@ -253,16 +253,18 @@ export default function HomePage() {
         <ChevronRightIcon size={22} className="shrink-0 text-ink" />
       </Link>
 
-      {/* 둘러보기 */}
-      <section className="mt-10">
-        <h2 className="text-lg font-bold text-ink">둘러보기</h2>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <ExploreTile label="주변 도서관" icon={<LibraryIcon size={26} />} />
-          <ExploreTile label={"?????\n?????"} icon={<span className="block h-[26px]" />} />
-          <ExploreTile label="읽을거리" icon={<ArticleIcon size={26} />} />
-          <ExploreTile label="공지사항" icon={<MegaphoneIcon size={26} />} />
-        </div>
-      </section>
+      {/* 둘러보기 — 우선 숨김(연결할 페이지 준비 후 노출) */}
+      {false && (
+        <section className="mt-10">
+          <h2 className="text-lg font-bold text-ink">둘러보기</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <ExploreTile label="주변 도서관" icon={<LibraryIcon size={26} />} />
+            <ExploreTile label={"?????\n?????"} icon={<span className="block h-[26px]" />} />
+            <ExploreTile label="읽을거리" icon={<ArticleIcon size={26} />} />
+            <ExploreTile label="공지사항" icon={<MegaphoneIcon size={26} />} />
+          </div>
+        </section>
+      )}
 
       {/* 나의 리뷰 */}
       <section className="mt-10">
