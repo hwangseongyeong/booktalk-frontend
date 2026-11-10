@@ -173,7 +173,7 @@ export default function HomePage() {
           </HeaderAction>
           <HeaderAction label="책등록" href="/books">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/book-add.png" alt="" className="h-6 w-auto" />
+            <img src="/images/book-add.png" alt="" className="h-8 w-auto" />
           </HeaderAction>
         </div>
       </header>
