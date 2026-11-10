@@ -240,6 +240,74 @@ export function ShareIcon({ size = 26, ...props }: IconProps) {
   );
 }
 
+/* ---------- 북로그 빈 상태 일러스트 (탭별) ---------- */
+/** 독서중 — 펼친 책 */
+export function OpenBookIcon({ size = 52, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 52 52" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M26 14 C19 11 11 11 6 14 L6 38 C11 35 19 35 26 38 Z" />
+        <path d="M26 14 C33 11 41 11 46 14 L46 38 C41 35 33 35 26 38 Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** 완독 — 덮은 책(노란 라벨) */
+export function ClosedBookIcon({ size = 52, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 52 52" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 11 L34 11 C35.1 11 36 11.9 36 13 L36 41 L18 41 Z" />
+        <path d="M22 11 L22 41" />
+        <path d="M18 41 C18 44 36 44 36 41" />
+        <rect x="25" y="16" width="8" height="6" rx="1" fill="#FFCF33" strokeWidth={2.2} />
+      </g>
+    </svg>
+  );
+}
+
+/** 담아둔 책 — 쌓인 책 */
+export function StackedBooksIcon({ size = 52, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 52 52" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="18" y="13" width="16" height="8" rx="2" />
+        <rect x="14" y="22" width="24" height="8" rx="2" />
+        <rect x="12" y="31" width="28" height="9" rx="2" />
+        <line x1="30" y1="16.5" x2="33" y2="16.5" strokeWidth={2.2} />
+        <line x1="30" y1="25.5" x2="34" y2="25.5" strokeWidth={2.2} />
+      </g>
+    </svg>
+  );
+}
+
+/** 더보기(점 3개, 가로) */
+export function KebabIcon({ size = 20, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
+      <circle cx="5.5" cy="12" r="1.7" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.7" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** 삭제(휴지통) */
+export function TrashIcon({ size = 18, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
+      <g stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7 L20 7" />
+        <path d="M9 7 L9 5 C9 4.4 9.4 4 10 4 L14 4 C14.6 4 15 4.4 15 5 L15 7" />
+        <path d="M6 7 L7 20 C7 20.6 7.4 21 8 21 L16 21 C16.6 21 17 20.6 17 20 L18 7" />
+        <line x1="10" y1="11" x2="10" y2="17" />
+        <line x1="14" y1="11" x2="14" y2="17" />
+      </g>
+    </svg>
+  );
+}
+
 /* ---------- 책 3권 (빈 상태 일러스트) ---------- */
 export function BooksStackIcon({ size = 48, ...props }: IconProps) {
   return (
