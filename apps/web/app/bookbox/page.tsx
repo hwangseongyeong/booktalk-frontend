@@ -290,7 +290,7 @@ export default function BookBoxPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [tab, setTab] = useState<BoxTab>("디자인");
-  const [granularity, setGranularity] = useState<Granularity>("월간");
+  const [granularity, setGranularity] = useState<Granularity>("연간");
   const [viewMode, setViewMode] = useState<ViewMode>("가로");
   const [colorTheme, setColorTheme] = useState<ColorTheme>("파스텔");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
@@ -446,12 +446,12 @@ export default function BookBoxPage() {
               tab === t ? "border-b-2 border-ink text-ink" : "text-muted"
             }`}
           >
-            {t === "디자인" ? "내 책장 꾸미기(디자인)" : "리딩 데이터(통계)"}
+            {t === "디자인" ? "내 책장 꾸미기" : "리딩 데이터"}
           </button>
         ))}
       </div>
 
-      {/* 기간 이동 */}
+      {/* 기간 이동 + 연간/월간 토글 (양쪽 탭 공통) */}
       <div className="mt-5 flex items-center gap-3">
         <button onClick={() => shiftPeriod(-1)} aria-label="이전" className="text-ink">
           <ChevronRightIcon size={22} className="rotate-180" />
@@ -460,18 +460,16 @@ export default function BookBoxPage() {
         <button onClick={() => shiftPeriod(1)} aria-label="다음" className="text-ink">
           <ChevronRightIcon size={22} />
         </button>
-      </div>
-
-      {/* 기간 단위 토글 */}
-      <div className="mt-4">
-        <Segmented
-          value={granularity}
-          options={[
-            { value: "연간", label: "연간" },
-            { value: "월간", label: "월간" },
-          ]}
-          onChange={setGranularity}
-        />
+        <div className="ml-auto">
+          <Segmented
+            value={granularity}
+            options={[
+              { value: "연간", label: "연간" },
+              { value: "월간", label: "월간" },
+            ]}
+            onChange={setGranularity}
+          />
+        </div>
       </div>
 
       {tab === "디자인" ? (
