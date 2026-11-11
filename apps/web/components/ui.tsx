@@ -185,6 +185,7 @@ export function Avatar({
   size = 92,
   src,
   color,
+  border = "bold",
   className = "",
 }: {
   nickname?: string;
@@ -192,12 +193,16 @@ export function Avatar({
   src?: string | null;
   /** 배경색을 지정하면 이니셜은 흰색으로 표시된다. */
   color?: string;
+  /** 외곽선: bold(기본, 굵은 검정) · thin(얇은 회색) · none */
+  border?: "bold" | "thin" | "none";
   className?: string;
 }) {
   const initial = nickname?.trim()?.[0]?.toUpperCase() ?? "?";
+  const borderCls =
+    border === "thin" ? "border border-muted-light" : border === "none" ? "" : "border-bold border-line";
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border-bold border-line font-bold ${
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold ${borderCls} ${
         color ? "text-paper-pure" : "bg-fill text-ink"
       } ${className}`}
       style={{

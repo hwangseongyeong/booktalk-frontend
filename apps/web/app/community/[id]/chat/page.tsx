@@ -492,6 +492,7 @@ export default function MeetingChatPage() {
                 src={m.profileImageUrl}
                 color={m.profileColor ?? undefined}
                 size={34}
+                border="thin"
               />
               <span className="w-full truncate text-center text-[10px] text-gray-500">{m.nickname}</span>
             </div>
