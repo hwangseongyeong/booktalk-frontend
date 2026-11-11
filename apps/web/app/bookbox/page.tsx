@@ -220,20 +220,23 @@ function Segmented<T extends string>({
   value,
   options,
   onChange,
+  size = "md",
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
+  size?: "md" | "sm";
 }) {
+  const pad = size === "sm" ? "px-2.5 py-1 text-xs" : "px-4 py-1.5 text-sm";
   return (
-    <div className="inline-flex rounded-full bg-fill p-1">
+    <div className="inline-flex shrink-0 rounded-full bg-fill p-1">
       {options.map((o) => {
         const active = o.value === value;
         return (
           <button
             key={o.value}
             onClick={() => onChange(o.value)}
-            className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${
+            className={`rounded-full font-bold transition-colors ${pad} ${
               active ? "bg-paper-pure text-ink shadow-[0_1px_3px_rgba(0,0,0,0.12)]" : "text-muted"
             }`}
           >
@@ -474,9 +477,10 @@ export default function BookBoxPage() {
 
       {tab === "디자인" ? (
         <>
-          {/* 보기/색감 토글 */}
-          <div className="mt-3 flex flex-wrap gap-2">
+          {/* 보기/색감 토글 — 한 줄 (좁으면 가로 스크롤) */}
+          <div className="mt-3 flex gap-2 overflow-x-auto">
             <Segmented
+              size="sm"
               value={viewMode}
               options={[
                 { value: "가로", label: "가로쌓기" },
@@ -486,6 +490,7 @@ export default function BookBoxPage() {
               onChange={setViewMode}
             />
             <Segmented
+              size="sm"
               value={colorTheme}
               options={[
                 { value: "모노톤", label: "모노톤" },
